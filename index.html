@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f7f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1620" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>ReefGo</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
+<style>
+/* Map first. One screen for the whole US coast: find your area, tap a reef, get the answer. */
+:root{
+  --bg:#f4f7f9; --card:#ffffff; --fg:#0e1b2a; --muted:#64748b; --line:#e3e9ee; --accent:#0b6e8f; --accent-soft:#e3f1f6;
+  --ok:#1f9d55; --ok-bg:#e4f5ea; --mid:#c77d00; --mid-bg:#fff2d8; --no:#d2402f; --no-bg:#fde4e0;
+  --shadow:0 1px 2px rgba(14,27,42,.06),0 8px 24px rgba(14,27,42,.10);
+  --font:"Manrope",-apple-system,"SF Pro Text",system-ui,sans-serif; color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0b1620; --card:#132334; --fg:#eef3f7; --muted:#94a6b8; --line:#213449; --accent:#5cc3e0; --accent-soft:#163142;
+  --ok:#3ccf7c; --ok-bg:#133b2a; --mid:#f2b134; --mid-bg:#3b2f10; --no:#ff7a66; --no-bg:#4a1f1a;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.4); color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:16px/1.45 var(--font);-webkit-font-smoothing:antialiased;overflow:hidden}
+h1,h2,h3{margin:0;text-wrap:balance}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input{font:inherit}
+#map{position:absolute;inset:0;background:#dfe9ef}
+.leaflet-container{font:inherit;background:#dfe9ef}
+.leaflet-control-attribution{font-size:10px}
+.leaflet-bar a{color:var(--fg);background:var(--card);border-bottom-color:var(--line)}
+
+/* top controls */
+.top{position:absolute;z-index:1000;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 10px);display:flex;gap:8px;align-items:center}
+.brand{font-weight:800;font-size:18px;letter-spacing:-.01em;background:var(--card);border-radius:999px;padding:8px 14px;box-shadow:var(--shadow)}
+.brand span{color:var(--accent)}
+.search{flex:1;display:flex;align-items:center;gap:8px;background:var(--card);border-radius:999px;padding:8px 12px;box-shadow:var(--shadow);min-width:0}
+.search input{flex:1;min-width:0;border:0;background:none;color:var(--fg);outline:none;font-size:15px}
+.search input::placeholder{color:var(--muted)}
+.search svg{width:16px;height:16px;flex:none;color:var(--muted)}
+.iconbtn{width:40px;height:40px;border-radius:50%;background:var(--card);box-shadow:var(--shadow);display:grid;place-items:center;color:var(--fg);flex:none}
+.iconbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.iconbtn.on{background:var(--fg);color:var(--bg)}
+.sug{position:absolute;z-index:1001;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 58px);background:var(--card);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;display:none}
+.sug.on{display:block}
+.sug button{display:block;width:100%;text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);font-size:14px}
+.sug button b{font-weight:800}.sug button span{color:var(--muted);font-size:12px;margin-left:6px}
+.satbar{position:absolute;z-index:1000;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 58px);display:none;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+.satbar::-webkit-scrollbar{display:none}.satbar.on{display:flex}
+.chip{flex:none;background:var(--card);border-radius:999px;padding:7px 12px;font-weight:700;font-size:13px;box-shadow:var(--shadow)}
+.chip.on{background:var(--fg);color:var(--bg)}
+
+/* area verdict (floating, top of sheet) */
+.area{position:absolute;z-index:1000;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 14px);background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:12px 14px;display:flex;align-items:center;gap:12px}
+.area .v{width:14px;height:14px;border-radius:50%;flex:none;background:var(--line)}
+.area .v.c0{background:var(--ok)}.area .v.c1{background:var(--mid)}.area .v.c2{background:var(--no)}
+.area .t{flex:1;min-width:0}.area b{display:block;font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.area span{display:block;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.area small{color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.area[hidden]{display:none}
+
+/* markers */
+.mk{width:22px;height:22px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.mk.cx{background:#3b82a0}.mk.c0{background:var(--ok)}.mk.c1{background:var(--mid)}.mk.c2{background:var(--no)}
+.mk.sel{transform:scale(1.3);border-color:#0e1b2a}
+.marker-cluster{background:rgba(59,130,160,.35);border-radius:50%;background-clip:padding-box}.marker-cluster div{width:26px;height:26px;margin:4px;border-radius:50%;text-align:center;line-height:26px;background:#3b82a0;color:#fff;font:800 12px/26px var(--font)}
+.marker-cluster.k0{background:rgba(31,157,85,.3)}.marker-cluster.k0 div{background:var(--ok)}
+.marker-cluster.k1{background:rgba(199,125,0,.3)}.marker-cluster.k1 div{background:var(--mid)}
+.marker-cluster.k2{background:rgba(210,64,47,.3)}.marker-cluster.k2 div{background:var(--no)}
+
+/* reef sheet */
+.sheet{position:absolute;z-index:1100;left:0;right:0;bottom:0;max-height:88%;background:var(--bg);border-radius:20px 20px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.25);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .25s}
+.sheet.on{transform:none}
+.sheet .grip{width:40px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 0;flex:none}
+.sheet .in{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
+.hero{border-radius:18px;padding:18px 18px 16px;background:var(--card);box-shadow:var(--shadow);position:relative}
+.hero.v0{background:var(--ok-bg)}.hero.v1{background:var(--mid-bg)}.hero.v2{background:var(--no-bg)}
+.hero .eyebrow{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-right:36px}
+.hero h1{font-size:30px;line-height:1.1;font-weight:800;letter-spacing:-.02em;margin:6px 0 8px}
+.hero.v0 h1{color:var(--ok)}.hero.v1 h1{color:var(--mid)}.hero.v2 h1{color:var(--no)}
+.hero .lead{margin:0;font-size:15px;font-weight:500}
+.hero .x{position:absolute;right:12px;top:12px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.08);display:grid;place-items:center;font-weight:800}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.two div{border-radius:12px;padding:8px 10px;background:rgba(255,255,255,.6)}
+@media (prefers-color-scheme:dark){.two div{background:rgba(0,0,0,.22)}.hero .x{background:rgba(255,255,255,.1)}}
+.two b{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.two span{font-size:17px;font-weight:800}
+.two .t0{color:var(--ok)}.two .t1{color:var(--mid)}.two .t2{color:var(--no)}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.facts div{background:rgba(255,255,255,.6);border-radius:12px;padding:8px 4px;text-align:center}
+@media (prefers-color-scheme:dark){.facts div{background:rgba(0,0,0,.22)}}
+.facts b{display:block;font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
+.facts small{color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.week{display:flex;gap:5px}
+.week button{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 0 7px;border-radius:12px;background:var(--card);border:1.5px solid var(--line);font-size:11px;font-weight:700;color:var(--muted)}
+.week button.sel{border-color:var(--fg);color:var(--fg)}
+.week i{width:12px;height:12px;border-radius:50%;background:var(--line)}
+.week .c0{background:var(--ok)}.week .c1{background:var(--mid)}.week .c2{background:var(--no)}
+.week em{font-style:normal;font-size:14px;color:var(--fg);font-variant-numeric:tabular-nums}
+.card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:12px 16px}
+.card h3{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.why{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.why li{display:flex;gap:10px;font-size:14px}.why li::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:8px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:14px}
+.kv span{color:var(--muted)}.kv b{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+details{background:var(--card);border-radius:16px;box-shadow:var(--shadow)}
+details summary{list-style:none;padding:12px 16px;font-weight:800;font-size:14px;display:flex;justify-content:space-between;cursor:pointer}
+details summary::-webkit-details-marker{display:none}
+details summary::after{content:"+";color:var(--muted)}details[open] summary::after{content:"–"}
+details .d{padding:0 16px 12px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+td,th{padding:4px 3px;text-align:left;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}
+th{color:var(--muted);font-weight:600}td:last-child,th:last-child{text-align:right}
+pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
+.muted{color:var(--muted)}
+.row{display:flex;gap:8px}
+.btn{flex:1;text-align:center;background:var(--card);border-radius:12px;padding:10px;font-weight:800;font-size:14px;box-shadow:var(--shadow);color:var(--accent);text-decoration:none}
+.skel{color:var(--muted);text-align:center;padding:24px 0}
+
+/* settings sheet */
+.modal{position:fixed;inset:0;z-index:2000;background:rgba(14,27,42,.45);display:none;align-items:flex-end;justify-content:center}
+.modal.on{display:flex}
+.modal .in{background:var(--card);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));max-width:560px;width:100%;max-height:85%;overflow-y:auto}
+.modal h2{font-size:18px;margin-bottom:8px}.modal p{margin:6px 0;font-size:14px}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px}
+.seg button{border:1.5px solid var(--line);border-radius:999px;padding:7px 12px;font-weight:700;font-size:13px}
+.seg button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.legend{display:flex;gap:10px;align-items:center;margin:6px 0;font-size:14px}.legend i{width:12px;height:12px;border-radius:50%;flex:none}
+@media (prefers-reduced-motion:reduce){.sheet{transition:none}}
+</style>
+</head>
+<body>
+<div id="map" role="application" aria-label="Reef map"></div>
+
+<div class="top">
+  <div class="brand">Reef<span>Go</span></div>
+  <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" placeholder="Reef, city or state" autocomplete="off" aria-label="Search"></label>
+  <button class="iconbtn" id="locBtn" aria-label="My location"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg></button>
+  <button class="iconbtn" id="satBtn" aria-label="Satellite"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 18 0 9 9 0 0 1-18 0z"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></button>
+  <button class="iconbtn" id="setBtn" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+</div>
+<div class="sug" id="sug"></div>
+<div class="satbar" id="satbar"></div>
+
+<div class="area" id="area" hidden><i class="v" id="areaDot"></i><div class="t"><small id="areaLbl">Conditions here · today</small><b id="areaH">Loading…</b><span id="areaS"></span></div></div>
+
+<div class="sheet" id="sheet"><div class="grip" id="grip"></div><div class="in" id="sheetIn"></div></div>
+
+<div class="modal" id="settings">
+  <div class="in">
+    <h2>Your boat</h2>
+    <p class="muted">Thresholds for the “Go” verdict depend on what you ride.</p>
+    <div class="seg" id="vessel"></div>
+    <h2>How to read</h2>
+    <div class="legend"><i style="background:var(--ok)"></i>Green — yes</div>
+    <div class="legend"><i style="background:var(--mid)"></i>Yellow — only if you really want to</div>
+    <div class="legend"><i style="background:var(--no)"></i>Red — no</div>
+    <p class="muted" style="font-size:13px">Two separate answers: <b>Go</b> (can you get there and back) and <b>Dive</b> (can you safely be in the water: wave height, period and water clarity). Computed for 7 am–3 pm. Clarity recovers about two days after strong wind; the satellite layer shows it. Forecasts can be wrong — check on site. Not for navigation.</p>
+    <p class="muted" style="font-size:12px">Data: NWS/NOAA marine zones, Open-Meteo (GFS + ECMWF), NOAA CO-OPS tides, NASA GIBS imagery, state reef programs (FWC, TPWD, AL MRD, SCDNR, GA DNR, NC DMF, MARCO).</p>
+    <button class="chip" id="setClose" style="width:100%;margin-top:8px">Done</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

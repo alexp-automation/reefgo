@@ -1,0 +1,10 @@
+{
+  "name": "ReefGo",
+  "short_name": "ReefGo",
+  "description": "Go or no-go for every public reef on the US coast: wind, seas, tides, satellite water clarity",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0b2238",
+  "theme_color": "#0b2238",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
