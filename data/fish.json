@@ -1,0 +1,787 @@
+{
+ "_note": "Rules snapshot 2026-10-27 from myfwc.com (see fwc-regs-2026.md). Seasons: null = year-round, 'closed' = closed, list of [start,end] with YYYY-MM-DD (that year only) or MM-DD (every year, may wrap). FL rules keys: fl = statewide, flg = Gulf, fla = Atlantic (incl. Monroe). Other states: species list only + link.",
+ "regions": {
+  "flg": {
+   "name": "Florida Gulf",
+   "url": "https://myfwc.com/fishing/saltwater/recreational/"
+  },
+  "fla": {
+   "name": "Florida Atlantic",
+   "url": "https://myfwc.com/fishing/saltwater/recreational/"
+  },
+  "AL": {
+   "name": "Alabama",
+   "url": "https://www.outdooralabama.com/fishing/saltwater-fishing"
+  },
+  "MS": {
+   "name": "Mississippi",
+   "url": "https://dmr.ms.gov/recreational-fishing/"
+  },
+  "LA": {
+   "name": "Louisiana",
+   "url": "https://www.wlf.louisiana.gov/page/recreational-fishing-regulations"
+  },
+  "TX": {
+   "name": "Texas",
+   "url": "https://tpwd.texas.gov/regulations/outdoor-annual/fishing/saltwater-fishing/"
+  },
+  "GA": {
+   "name": "Georgia",
+   "url": "https://coastalgadnr.org/Fishing"
+  },
+  "SC": {
+   "name": "South Carolina",
+   "url": "https://www.dnr.sc.gov/regulations.html"
+  },
+  "NC": {
+   "name": "North Carolina",
+   "url": "https://www.deq.nc.gov/about/divisions/marine-fisheries"
+  },
+  "VA": {
+   "name": "Virginia",
+   "url": "https://mrc.virginia.gov/regulations/recfishingrules.shtm"
+  },
+  "MD": {
+   "name": "Maryland",
+   "url": "https://dnr.maryland.gov/fisheries/pages/regulations/index.aspx"
+  },
+  "DE": {
+   "name": "Delaware",
+   "url": "https://dnrec.delaware.gov/fish-wildlife/fishing/"
+  },
+  "NJ": {
+   "name": "New Jersey",
+   "url": "https://dep.nj.gov/njfw/fishing/marine/"
+  },
+  "NY": {
+   "name": "New York",
+   "url": "https://dec.ny.gov/things-to-do/saltwater-fishing/recreational-fishing-regulations"
+  }
+ },
+ "groups": {
+  "gulf": [
+   "flg",
+   "AL",
+   "MS",
+   "LA",
+   "TX"
+  ],
+  "satl": [
+   "fla",
+   "GA",
+   "SC",
+   "NC"
+  ],
+  "matl": [
+   "VA",
+   "MD",
+   "DE",
+   "NJ",
+   "NY"
+  ]
+ },
+ "species": [
+  {
+   "id": "hogfish",
+   "name": "Hogfish",
+   "sci": "Lachnolaimus maximus",
+   "wiki": "Hogfish",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 15,
+   "rules": {
+    "flg": {
+     "size": "14\" FL",
+     "bag": "5",
+     "season": null
+    },
+    "fla": {
+     "size": "16\" FL",
+     "bag": "1",
+     "season": [
+      [
+       "05-01",
+       "10-31"
+      ]
+     ]
+    }
+   },
+   "img": "img/fish/hogfish.jpg"
+  },
+  {
+   "id": "gag",
+   "name": "Gag grouper",
+   "sci": "Mycteroperca microlepis",
+   "wiki": "Mycteroperca microlepis",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 25,
+   "rules": {
+    "flg": {
+     "size": "24\" TL",
+     "bag": "2 (4 grouper total)",
+     "season": [
+      [
+       "2026-09-01",
+       "2026-09-30"
+      ]
+     ]
+    },
+    "fla": {
+     "size": "24\" TL",
+     "bag": "3 grouper total",
+     "season": [
+      [
+       "05-01",
+       "12-31"
+      ]
+     ],
+     "verify": true
+    }
+   },
+   "img": "img/fish/gag.jpg"
+  },
+  {
+   "id": "redgrouper",
+   "name": "Red grouper",
+   "sci": "Epinephelus morio",
+   "wiki": "Red grouper",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 25,
+   "rules": {
+    "flg": {
+     "size": "20\" TL",
+     "bag": "2 (4 grouper total)",
+     "season": null
+    },
+    "fla": {
+     "size": "20\" TL",
+     "bag": "3 grouper total",
+     "season": [
+      [
+       "05-01",
+       "12-31"
+      ]
+     ],
+     "verify": true
+    }
+   },
+   "img": "img/fish/redgrouper.jpg"
+  },
+  {
+   "id": "blackgrouper",
+   "name": "Black grouper",
+   "sci": "Mycteroperca bonaci",
+   "wiki": "Mycteroperca bonaci",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 40,
+   "rules": {
+    "flg": {
+     "size": "24\" TL",
+     "bag": "4 grouper total",
+     "season": null
+    },
+    "fla": {
+     "size": "24\" TL",
+     "bag": "3 grouper total",
+     "season": [
+      [
+       "05-01",
+       "12-31"
+      ]
+     ],
+     "verify": true
+    }
+   },
+   "img": "img/fish/blackgrouper.jpg"
+  },
+  {
+   "id": "scamp",
+   "name": "Scamp",
+   "sci": "Mycteroperca phenax",
+   "wiki": "Scamp grouper",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 60,
+   "rules": {
+    "flg": {
+     "size": "16\" TL",
+     "bag": "4 grouper total",
+     "season": null,
+     "note": "Federal waters deeper than 20 fathoms closed Feb 1–Mar 31"
+    },
+    "fla": {
+     "size": "16\" TL",
+     "bag": "3 grouper total",
+     "season": [
+      [
+       "05-01",
+       "12-31"
+      ]
+     ],
+     "verify": true
+    }
+   },
+   "img": "img/fish/scamp.jpg"
+  },
+  {
+   "id": "goliath",
+   "name": "Goliath grouper",
+   "sci": "Epinephelus itajara",
+   "wiki": "Atlantic goliath grouper",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 25,
+   "protected": true,
+   "rules": {
+    "fl": {
+     "size": "—",
+     "bag": "Permit only",
+     "season": "closed",
+     "note": "May never be speared. Harvest only with an FWC permit tag."
+    }
+   },
+   "img": "img/fish/goliath.jpg"
+  },
+  {
+   "id": "nassau",
+   "name": "Nassau grouper",
+   "sci": "Epinephelus striatus",
+   "wiki": "Nassau grouper",
+   "groups": [
+    "satl"
+   ],
+   "minDepth": 25,
+   "protected": true,
+   "rules": {
+    "fl": {
+     "size": "—",
+     "bag": "0",
+     "season": "closed",
+     "note": "Protected. No harvest, no spearing."
+    }
+   },
+   "img": "img/fish/nassau.jpg"
+  },
+  {
+   "id": "redsnapper",
+   "name": "Red snapper",
+   "sci": "Lutjanus campechanus",
+   "wiki": "Northern red snapper",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 60,
+   "rules": {
+    "flg": {
+     "size": "16\" TL",
+     "bag": "2 (10 snapper total)",
+     "season": [
+      [
+       "2026-05-22",
+       "2026-07-31"
+      ],
+      [
+       "2026-09-01",
+       "2026-10-04"
+      ],
+      [
+       "2026-10-09",
+       "2026-10-22"
+      ],
+      [
+       "2026-10-23",
+       "2026-10-25"
+      ],
+      [
+       "2026-10-30",
+       "2026-11-01"
+      ],
+      [
+       "2026-11-07",
+       "2026-11-08"
+      ],
+      [
+       "2026-11-14",
+       "2026-11-15"
+      ],
+      [
+       "2026-11-21",
+       "2026-11-22"
+      ],
+      [
+       "2026-11-26",
+       "2026-11-29"
+      ],
+      [
+       "2026-12-05",
+       "2026-12-06"
+      ],
+      [
+       "2026-12-12",
+       "2026-12-13"
+      ],
+      [
+       "2026-12-19",
+       "2026-12-20"
+      ],
+      [
+       "2026-12-25",
+       "2026-12-27"
+      ],
+      [
+       "2027-01-01",
+       "2027-01-04"
+      ]
+     ]
+    },
+    "fla": {
+     "size": "20\" TL",
+     "bag": "1",
+     "season": "check",
+     "note": "Atlantic opens only for the few days set each year by NOAA; check myfwc.com"
+    }
+   },
+   "img": "img/fish/redsnapper.jpg"
+  },
+  {
+   "id": "graysnapper",
+   "name": "Gray (mangrove) snapper",
+   "sci": "Lutjanus griseus",
+   "wiki": "Mangrove snapper",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 0,
+   "rules": {
+    "fl": {
+     "size": "10\" TL",
+     "bag": "5 (10 snapper total)",
+     "season": null
+    }
+   },
+   "img": "img/fish/graysnapper.jpg"
+  },
+  {
+   "id": "lane",
+   "name": "Lane snapper",
+   "sci": "Lutjanus synagris",
+   "wiki": "Lane snapper",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 25,
+   "rules": {
+    "fl": {
+     "size": "10\" TL",
+     "bag": "20",
+     "season": null,
+     "note": "Not in the snapper aggregate since Apr 1, 2026"
+    }
+   },
+   "img": "img/fish/lane.jpg"
+  },
+  {
+   "id": "mutton",
+   "name": "Mutton snapper",
+   "sci": "Lutjanus analis",
+   "wiki": "Mutton snapper",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 60,
+   "rules": {
+    "fl": {
+     "size": "18\" TL",
+     "bag": "5 (10 snapper total)",
+     "season": null
+    }
+   },
+   "img": "img/fish/mutton.jpg"
+  },
+  {
+   "id": "vermilion",
+   "name": "Vermilion snapper",
+   "sci": "Rhomboplites aurorubens",
+   "wiki": "Vermilion snapper",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 60,
+   "rules": {
+    "fl": {
+     "size": "10\" TL",
+     "bag": "10",
+     "season": null
+    }
+   },
+   "img": "img/fish/vermilion.jpg"
+  },
+  {
+   "id": "cubera",
+   "name": "Cubera snapper",
+   "sci": "Lutjanus cyanopterus",
+   "wiki": "Cubera snapper",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 40,
+   "rules": {
+    "fl": {
+     "size": "12\" TL",
+     "bag": "10 snapper total",
+     "season": null,
+     "note": "Max 2 over 30\" per vessel"
+    }
+   },
+   "img": "img/fish/cubera.jpg"
+  },
+  {
+   "id": "yellowtail",
+   "name": "Yellowtail snapper",
+   "sci": "Ocyurus chrysurus",
+   "wiki": "Yellowtail snapper",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 25,
+   "rules": {
+    "fl": {
+     "size": "12\" TL",
+     "bag": "10 snapper total",
+     "season": null
+    }
+   },
+   "img": "img/fish/yellowtail.jpg"
+  },
+  {
+   "id": "sheepshead",
+   "name": "Sheepshead",
+   "sci": "Archosargus probatocephalus",
+   "wiki": "Archosargus probatocephalus",
+   "groups": [
+    "gulf",
+    "satl",
+    "matl"
+   ],
+   "minDepth": 0,
+   "rules": {
+    "fl": {
+     "size": "12\" TL",
+     "bag": "8",
+     "season": null,
+     "note": "Vessel limit 50 in Mar–Apr"
+    }
+   },
+   "img": "img/fish/sheepshead.jpg"
+  },
+  {
+   "id": "flounder",
+   "name": "Flounder",
+   "sci": "Paralichthys albigutta",
+   "wiki": "Gulf flounder",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 0,
+   "rules": {
+    "fl": {
+     "size": "14\" TL",
+     "bag": "5",
+     "season": [
+      [
+       "12-01",
+       "10-14"
+      ]
+     ],
+     "note": "Closed Oct 15–Nov 30"
+    }
+   },
+   "img": "img/fish/flounder.jpg"
+  },
+  {
+   "id": "triggerfish",
+   "name": "Gray triggerfish",
+   "sci": "Balistes capriscus",
+   "wiki": "Grey triggerfish",
+   "groups": [
+    "gulf",
+    "satl",
+    "matl"
+   ],
+   "minDepth": 25,
+   "rules": {
+    "flg": {
+     "size": "15\" FL",
+     "bag": "1",
+     "season": [
+      [
+       "03-01",
+       "05-31"
+      ],
+      [
+       "08-01",
+       "12-31"
+      ]
+     ]
+    },
+    "fla": {
+     "size": "12\" FL",
+     "bag": "10",
+     "season": null
+    }
+   },
+   "img": "img/fish/triggerfish.jpg"
+  },
+  {
+   "id": "amberjack",
+   "name": "Greater amberjack",
+   "sci": "Seriola dumerili",
+   "wiki": "Greater amberjack",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 60,
+   "rules": {
+    "flg": {
+     "size": "34\" FL",
+     "bag": "1",
+     "season": [
+      [
+       "2026-09-01",
+       "2026-10-13"
+      ]
+     ]
+    },
+    "fla": {
+     "size": "28\" FL",
+     "bag": "1",
+     "season": null,
+     "verify": true
+    }
+   },
+   "img": "img/fish/amberjack.jpg"
+  },
+  {
+   "id": "cobia",
+   "name": "Cobia",
+   "sci": "Rachycentron canadum",
+   "wiki": "Cobia",
+   "groups": [
+    "gulf",
+    "satl",
+    "matl"
+   ],
+   "minDepth": 25,
+   "rules": {
+    "fl": {
+     "size": "36\" FL",
+     "bag": "1 (2 per vessel)",
+     "season": null
+    }
+   },
+   "img": "img/fish/cobia.jpg"
+  },
+  {
+   "id": "spanish",
+   "name": "Spanish mackerel",
+   "sci": "Scomberomorus maculatus",
+   "wiki": "Atlantic Spanish mackerel",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 0,
+   "rules": {
+    "fl": {
+     "size": "12\" FL",
+     "bag": "15",
+     "season": null
+    }
+   },
+   "img": "img/fish/spanish.jpg"
+  },
+  {
+   "id": "king",
+   "name": "King mackerel",
+   "sci": "Scomberomorus cavalla",
+   "wiki": "King mackerel",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 60,
+   "rules": {
+    "flg": {
+     "size": "24\" FL",
+     "bag": "3",
+     "season": null
+    },
+    "fla": {
+     "size": "24\" FL",
+     "bag": "2",
+     "season": null
+    }
+   },
+   "img": "img/fish/king.jpg"
+  },
+  {
+   "id": "seabass",
+   "name": "Black sea bass",
+   "sci": "Centropristis striata",
+   "wiki": "Black sea bass",
+   "groups": [
+    "gulf",
+    "satl",
+    "matl"
+   ],
+   "minDepth": 0,
+   "rules": {
+    "flg": {
+     "size": "10\" TL",
+     "bag": "100 lb",
+     "season": null
+    },
+    "fla": {
+     "size": "13\" TL",
+     "bag": "7",
+     "season": null
+    }
+   },
+   "img": "img/fish/seabass.jpg"
+  },
+  {
+   "id": "barracuda",
+   "name": "Great barracuda",
+   "sci": "Sphyraena barracuda",
+   "wiki": "Great barracuda",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 25,
+   "rules": {
+    "fl": {
+     "size": "none",
+     "bag": "2 (6 per vessel)",
+     "season": null,
+     "note": "Collier to Martin County: 15–36\" slot, one over 36\" allowed",
+     "verify": true
+    }
+   },
+   "img": "img/fish/barracuda.jpg"
+  },
+  {
+   "id": "lionfish",
+   "name": "Lionfish",
+   "sci": "Pterois volitans",
+   "wiki": "Red lionfish",
+   "groups": [
+    "gulf",
+    "satl"
+   ],
+   "minDepth": 25,
+   "rules": {
+    "fl": {
+     "size": "none",
+     "bag": "Unlimited",
+     "season": null,
+     "note": "Invasive: take all you can. No license needed with a pole spear or sling"
+    }
+   },
+   "img": "img/fish/lionfish.jpg"
+  },
+  {
+   "id": "redporgy",
+   "name": "Red porgy",
+   "sci": "Pagrus pagrus",
+   "wiki": "Red porgy",
+   "groups": [
+    "satl"
+   ],
+   "minDepth": 60,
+   "rules": {
+    "fla": {
+     "size": "14\" TL",
+     "bag": "3",
+     "season": null,
+     "verify": true
+    }
+   },
+   "img": "img/fish/redporgy.jpg"
+  },
+  {
+   "id": "tautog",
+   "name": "Tautog",
+   "sci": "Tautoga onitis",
+   "wiki": "Tautog",
+   "groups": [
+    "matl"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/tautog.jpg"
+  },
+  {
+   "id": "fluke",
+   "name": "Summer flounder (fluke)",
+   "sci": "Paralichthys dentatus",
+   "wiki": "Summer flounder",
+   "groups": [
+    "matl"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/fluke.jpg"
+  },
+  {
+   "id": "scup",
+   "name": "Scup",
+   "sci": "Stenotomus chrysops",
+   "wiki": "Scup",
+   "groups": [
+    "matl"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/scup.jpg"
+  },
+  {
+   "id": "bluefish",
+   "name": "Bluefish",
+   "sci": "Pomatomus saltatrix",
+   "wiki": "Bluefish",
+   "groups": [
+    "matl"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/bluefish.jpg"
+  }
+ ],
+ "flNoSpear": "Florida: never spear billfish, rays, sharks, sturgeon, bonefish, tarpon, goliath or Nassau grouper, snook, spotted seatrout, red drum, weakfish, pompano, permit, tripletail, crabs, lobster, or ornamental reef fish (angelfish, parrotfish, puffers, surgeonfish and the like). Keep 100 yd from public beaches, piers and bridges. Reef fish from a private boat need the free State Reef Fish Angler designation.",
+ "fwcUrl": "https://myfwc.com/fishing/saltwater/recreational/"
+}

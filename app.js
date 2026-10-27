@@ -13,7 +13,7 @@ const VESSELS = { pwc: ['Jet ski', 12, 16, 2.5, 3], kayak: ['Kayak / SUP', 8, 12
 const CITIES = [['Tampa, FL', 27.95, -82.46], ['Tarpon Springs, FL', 28.15, -82.76], ['Clearwater, FL', 27.97, -82.8], ['St. Petersburg, FL', 27.77, -82.64], ['Sarasota, FL', 27.34, -82.53], ['Fort Myers, FL', 26.64, -81.87], ['Naples, FL', 26.14, -81.79], ['Key West, FL', 24.56, -81.78], ['Miami, FL', 25.76, -80.19], ['Fort Lauderdale, FL', 26.12, -80.14], ['West Palm Beach, FL', 26.71, -80.05], ['Daytona Beach, FL', 29.21, -81.02], ['Jacksonville, FL', 30.33, -81.66], ['Pensacola, FL', 30.42, -87.22], ['Destin, FL', 30.39, -86.5], ['Panama City, FL', 30.16, -85.66], ['Crystal River, FL', 28.9, -82.59], ['Cedar Key, FL', 29.14, -83.03], ['Mobile, AL', 30.69, -88.04], ['Orange Beach, AL', 30.29, -87.57], ['Biloxi, MS', 30.4, -88.89], ['New Orleans, LA', 29.95, -90.07], ['Venice, LA', 29.28, -89.35], ['Galveston, TX', 29.3, -94.8], ['Freeport, TX', 28.95, -95.36], ['Corpus Christi, TX', 27.8, -97.4], ['Port Aransas, TX', 27.83, -97.06], ['South Padre Island, TX', 26.1, -97.17], ['Savannah, GA', 32.08, -81.1], ['Brunswick, GA', 31.15, -81.49], ['Charleston, SC', 32.78, -79.93], ['Myrtle Beach, SC', 33.69, -78.89], ['Wilmington, NC', 34.23, -77.94], ['Morehead City, NC', 34.72, -76.73], ['Nags Head, NC', 35.96, -75.63], ['Virginia Beach, VA', 36.85, -75.98], ['Ocean City, MD', 38.34, -75.08], ['Cape May, NJ', 38.94, -74.91], ['Atlantic City, NJ', 39.36, -74.42], ['New York, NY', 40.71, -74.01], ['Montauk, NY', 41.04, -71.95], ['Boston, MA', 42.36, -71.06], ['San Diego, CA', 32.72, -117.16], ['Los Angeles, CA', 33.94, -118.4], ['San Francisco, CA', 37.77, -122.42], ['Seattle, WA', 47.6, -122.33], ['Honolulu, HI', 21.31, -157.86]];
 const STATES = { FL: 'Florida', AL: 'Alabama', MS: 'Mississippi', LA: 'Louisiana', TX: 'Texas', GA: 'Georgia', SC: 'South Carolina', NC: 'North Carolina', VA: 'Virginia', MD: 'Maryland', DE: 'Delaware', NJ: 'New Jersey', NY: 'New York', CA: 'California', WA: 'Washington', HI: 'Hawaii' };
 
-const S = { reefs: [], tides: [], buoys: [], buoysAt: null, reef: null, day: 0, days: [], fc: {}, cwf: {}, zone: {}, tideCache: {}, area: null, areaKey: '', vessel: 'pwc', sat: { on: false, date: null, layer: GIBS[0][1] } };
+const S = { reefs: [], tides: [], buoys: [], fish: null, fishAll: {}, buoysAt: null, reef: null, day: 0, days: [], fc: {}, cwf: {}, zone: {}, tideCache: {}, area: null, areaKey: '', vessel: 'pwc', sat: { on: false, date: null, layer: GIBS[0][1] } };
 try { S.vessel = localStorage.getItem('rg.vessel') || 'pwc'; } catch (e) {}
 const $ = id => document.getElementById(id);
 const f1 = x => x == null ? '—' : String(Math.round(x * 10) / 10);
@@ -121,6 +121,44 @@ function lead(s, v, z, fc) {
   return t;
 }
 
+// ---------- fish & rules ----------
+// Region: FL splits into Gulf and Atlantic (Atlantic counties + Monroe); other states use the state code. Rules exist for FL only; other states get the species list + a link.
+const FL_ATL = new Set(['Nassau', 'Duval', 'St. Johns', 'Flagler', 'Volusia', 'Brevard', 'Indian River', 'St. Lucie', 'Martin', 'Palm Beach', 'Broward', 'Miami-Dade', 'Monroe']);
+function fishRegion(r) { if (r.st === 'FL') return r.county ? (FL_ATL.has(r.county) ? 'fla' : 'flg') : (r.lon > -81.6 ? 'fla' : 'flg'); return S.fish && S.fish.regions[r.st] ? r.st : null; }
+function fishGroup(reg) { for (const [g, list] of Object.entries(S.fish.groups)) if (list.includes(reg)) return g; return null; }
+// season → 'open' | 'closed' | 'check'. Entries: YYYY-MM-DD..YYYY-MM-DD (that year only) or MM-DD..MM-DD (every year, may wrap the new year).
+function seasonStatus(season, key) {
+  if (season === null || season === undefined) return 'open'; if (season === 'closed') return 'closed'; if (season === 'check') return 'check';
+  let dated = true, sameYear = false;
+  for (const [a, b] of season) {
+    if (a.length === 10) { if (a.slice(0, 4) === key.slice(0, 4) || b.slice(0, 4) === key.slice(0, 4)) sameYear = true; if (key >= a && key <= b) return 'open'; }
+    else { dated = false; const md = key.slice(5); if (a <= b ? (md >= a && md <= b) : (md >= a || md <= b)) return 'open'; }
+  }
+  return dated && !sameYear ? 'check' : 'closed';
+}
+function fishList(r, key) {
+  const reg = fishRegion(r); if (!reg) return null; const grp = fishGroup(reg); if (!grp) return null;
+  const fl = reg === 'flg' || reg === 'fla'; const d = r.depth;
+  const list = S.fish.species.filter(sp => sp.groups.includes(grp) && (d == null || sp.minDepth <= d + 5)).map(sp => {
+    const rule = fl ? (sp.rules[reg] || sp.rules.fl) : null;
+    let st = sp.protected ? 'protected' : !rule ? 'rules' : seasonStatus(rule.season, key);
+    return { sp, rule, st };
+  });
+  const order = { open: 0, check: 1, closed: 2, protected: 3, rules: 0 };
+  list.sort((a, b) => order[a.st] - order[b.st] || a.sp.minDepth - b.sp.minDepth);
+  return { reg, fl, list, url: S.fish.regions[reg].url, name: S.fish.regions[reg].name };
+}
+const PILL = { open: 'Open', closed: 'Closed', check: 'Check season', protected: 'Protected', rules: 'See rules' };
+function fishHTML(r, key) {
+  if (!S.fish) return ''; const f = fishList(r, key); if (!f || !f.list.length) return '';
+  const n = f.list.filter(x => x.st === 'open').length, c = f.list.filter(x => x.st === 'closed' || x.st === 'protected').length;
+  const head = f.fl ? `${n} open ${dayName(key).toLowerCase()}, ${c} closed` : `${f.list.length} species · ${esc(f.name)} rules`;
+  const row = x => `<div class="fr"><img src="${x.sp.img || ''}" alt="" loading="lazy"><div class="ft"><b>${esc(x.sp.name)}</b><span>${x.rule ? esc([x.rule.size !== 'none' && x.rule.size !== '—' ? 'min ' + x.rule.size : null, 'bag ' + x.rule.bag].filter(Boolean).join(' · ')) : `<i>${esc(x.sp.sci)}</i>`}</span>${x.rule && x.rule.note ? `<small>${esc(x.rule.note)}${x.rule.verify ? ' · verify' : ''}</small>` : x.rule && x.rule.verify ? '<small>Verify on myfwc.com</small>' : ''}</div><em class="pill ${x.st}">${PILL[x.st]}</em></div>`;
+  const first = f.list.slice(0, 7), rest = f.list.slice(7);
+  return `<div class="card fish"><h3>Fish here · ${head}</h3><div class="fl">${first.map(row).join('')}</div>${rest.length ? `<div class="fl more" hidden>${rest.map(row).join('')}</div><button class="link" data-more>Show ${rest.length} more</button>` : ''}
+    <p class="muted" style="margin:8px 0 0;font-size:12px">${f.fl ? esc(S.fish.flNoSpear) + ' Snapshot of FWC rules; seasons change yearly. ' : `Size, bag and season limits are set by ${esc(f.name)}. `}<a href="${f.url}" target="_blank" rel="noopener">${f.fl ? 'FWC rules' : esc(f.name) + ' rules'}</a>. Species guessed from reef depth${r.depth ? ` (${f0(r.depth)} ft)` : ''}, not a survey.</p></div>`;
+}
+
 // ---------- map ----------
 let view = { lat: 28.2, lon: -82.9, z: 9 }; try { view = JSON.parse(localStorage.getItem('rg.view')) || view; } catch (e) {}
 const map = L.map('map', { zoomControl: false, attributionControl: true }).setView([view.lat, view.lon], view.z);
@@ -204,6 +242,7 @@ function renderReef(r, fc, zone, cwf, tst, td) {
     ${weekHTML(fc)}
     <div class="card"><h3>${esc(r.name || r.id)}</h3><p style="margin:0;font-size:14px">${esc(r.desc || '')}${meta ? `<br><span class="muted">${esc(meta)}</span>` : ''}</p></div>
     ${buoyHTML(r.lat, r.lon)}
+    ${fishHTML(r, key)}
     ${v.why.length ? `<div class="card"><h3>Why</h3><ul class="why">${v.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
     ${tides.length ? `<div class="card"><h3>Tide · ${esc(tst.n)}</h3><div class="kv">${tides.map(t => `<span>${t.type} ${t.h}</span><b>slack ${t.slack}</b>`).join('')}</div><p class="muted" style="margin:6px 0 0;font-size:12px">Slack water is the easy window to launch and retrieve.</p></div>` : ''}
     <details><summary>Hour by hour</summary><div class="d"><table><tr><th>Hour</th><th>Wind GFS / ECMWF</th><th>Gust</th><th>Seas</th></tr>${rows}</table><p class="muted" style="font-size:12px">Knots. The worse of two models drives the verdict. Air ${f0(F(s.tmax))}°F, rain ${f0(s.rain)}%.</p></div></details>
@@ -212,6 +251,7 @@ function renderReef(r, fc, zone, cwf, tst, td) {
     <p class="muted" style="font-size:11px;text-align:center;margin:0">Forecast estimate. Conditions can differ on site. Not for navigation. ${r.lat.toFixed(4)}, ${r.lon.toFixed(4)}</p>`;
   $('xBtn').onclick = closeReef;
   el.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { S.day = +b.dataset.day; renderReef(r, fc, zone, cwf, tst, td); S.area = null; S.areaKey = ''; });
+  const more = el.querySelector('[data-more]'); if (more) more.onclick = () => { el.querySelector('.fl.more').hidden = false; more.remove(); };
   $('satGo').onclick = () => { closeReef(); map.setView([r.lat, r.lon], Math.max(map.getZoom(), 9)); toggleSat(true); };
 }
 function closeReef() { $('sheet').classList.remove('on'); if (S.reef && S.reef.m) S.reef.m.setIcon(mkIcon(areaClass(), false)); S.reef = null; updateArea(); }
@@ -226,7 +266,8 @@ $('settings').onclick = e => { if (e.target === $('settings')) $('settings').cla
 
 (async () => {
   const t = todayKey(); S.days = Array.from({ length: 7 }, (_, i) => addDays(t, i));
-  const [reefs, tides, nd] = await Promise.all([getJSON('reefs.json'), getJSON('tides.json').catch(() => []), getJSON('ndbc.json?' + Date.now()).catch(() => null)]);
+  const [reefs, tides, nd, fish] = await Promise.all([getJSON('reefs.json'), getJSON('tides.json').catch(() => []), getJSON('ndbc.json?' + Date.now()).catch(() => null), getJSON('data/fish.json').catch(() => null)]);
+  S.fish = fish;
   S.tides = tides; S.buoys = nd ? nd.stations : []; loadReefs(reefs); updateArea();
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
