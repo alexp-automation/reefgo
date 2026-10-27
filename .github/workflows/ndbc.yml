@@ -1,0 +1,21 @@
+name: Update NDBC buoy observations
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  ndbc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch latest observations
+        run: python3 scripts/ndbc.py ndbc.json
+      - name: Commit if changed
+        run: |
+          git config user.name "reefgo-bot"
+          git config user.email "reefgo-bot@users.noreply.github.com"
+          git add ndbc.json
+          git diff --cached --quiet || git commit -m "ndbc: $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push
