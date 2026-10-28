@@ -28,8 +28,8 @@
   --ok:#3ccf7c; --ok-bg:#133b2a; --mid:#f2b134; --mid-bg:#3b2f10; --no:#ff7a66; --no-bg:#4a1f1a;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.4); color-scheme:dark}}
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
-body{background:var(--bg);color:var(--fg);font:16px/1.45 var(--font);-webkit-font-smoothing:antialiased;overflow:hidden}
+html,body{height:100%;margin:0;overflow:hidden}
+body{position:fixed;inset:0;width:100%;overscroll-behavior:none;background:var(--bg);color:var(--fg);font:16px/1.45 var(--font);-webkit-font-smoothing:antialiased}
 h1,h2,h3{margin:0;text-wrap:balance}
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
 input{font:inherit}
@@ -82,8 +82,8 @@ input{font:inherit}
 .marker-cluster.k2{background:rgba(210,64,47,.3)}.marker-cluster.k2 div{background:var(--no)}
 
 /* reef sheet */
-.sheet{position:absolute;z-index:1100;left:0;right:0;bottom:0;max-height:88%;background:var(--bg);border-radius:20px 20px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.25);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .25s}
-.sheet.on{transform:none}
+.sheet{position:absolute;z-index:1100;left:0;right:0;bottom:0;max-height:88%;background:var(--bg);border-radius:20px 20px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.25);display:flex;flex-direction:column;transform:translateY(100%);visibility:hidden;transition:transform .25s,visibility 0s .25s}
+.sheet.on{transform:none;visibility:visible;transition:transform .25s}
 .sheet .grip{width:40px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 0;flex:none}
 .sheet .in{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
 .hero{border-radius:18px;padding:18px 18px 16px;background:var(--card);box-shadow:var(--shadow);position:relative}
@@ -249,6 +249,6 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
-<script src="app.js?v=15"></script>
+<script src="app.js?v=16"></script>
 </body>
 </html>
