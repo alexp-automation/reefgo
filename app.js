@@ -382,9 +382,26 @@ function buildNotify() { const cb = $('notifyOn'); const ok = 'Notification' in 
   if (!ok) $('notifyHint').textContent = 'Alerts are off in this browser. On iPhone they work only from the Home Screen: tap Share in Safari, choose “Add to Home Screen”, then open ReefGo from that icon and turn this on.';
   cb.onchange = async () => { if (cb.checked) { const p = await Notification.requestPermission(); if (p !== 'granted') { cb.checked = false; return; } try { localStorage.setItem('rg.notify', '1'); } catch (e) {} S.areaKey = ''; updateArea(); } else { try { localStorage.setItem('rg.notify', '0'); } catch (e) {} } }; }
 
+// ---------- night mode ----------
+// Auto: dark from sunset to sunrise at the map center (NOAA sunrise equation, no network); or forced light / dark.
+const THEMES = { auto: 'Auto (sunset)', light: 'Light', dark: 'Dark' };
+S.theme = 'auto'; try { S.theme = THEMES[localStorage.getItem('rg.theme')] ? localStorage.getItem('rg.theme') : 'auto'; } catch (e) {}
+function sunTimes(lat, lon, date) { // returns [sunriseUTCh, sunsetUTCh] in fractional hours, or null in polar cases
+  const rad = Math.PI / 180, d0 = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()); const n = (d0 - Date.UTC(2000, 0, 1, 12)) / 864e5;
+  const M = (357.5291 + 0.98560028 * n) % 360, C = 1.9148 * Math.sin(M * rad) + 0.02 * Math.sin(2 * M * rad) + 0.0003 * Math.sin(3 * M * rad);
+  const lam = (M + C + 180 + 102.9372) % 360, dec = Math.asin(Math.sin(lam * rad) * Math.sin(23.4397 * rad));
+  const cosH = (Math.sin(-0.833 * rad) - Math.sin(lat * rad) * Math.sin(dec)) / (Math.cos(lat * rad) * Math.cos(dec)); if (cosH < -1 || cosH > 1) return null;
+  const H = Math.acos(cosH) / rad; const eot = 7.53 * Math.cos(M * rad) + 1.5 * Math.sin(M * rad) - 2.5 * Math.sin(2 * lam * rad); // minutes, approx
+  const noon = 12 - lon / 15 - eot / 60; return [noon - H / 15, noon + H / 15];
+}
+function isNight() { const c = map.getCenter(); const now = new Date(); const st = sunTimes(c.lat, c.lng, now); if (!st) return false; const h = now.getUTCHours() + now.getUTCMinutes() / 60; const [r, s] = st.map(x => ((x % 24) + 24) % 24); return r < s ? (h < r || h > s) : (h > s && h < r); }
+function applyTheme() { const t = S.theme === 'auto' ? (isNight() ? 'dark' : 'light') : S.theme; document.documentElement.dataset.theme = t; const m = document.querySelector('meta[name=theme-color]:not([media])'); if (m) m.content = t === 'dark' ? '#0b1620' : '#f4f7f9'; }
+function buildTheme() { const el = $('theme'); el.innerHTML = ''; Object.entries(THEMES).forEach(([k, n]) => { const b = document.createElement('button'); b.textContent = n; b.className = k === S.theme ? 'on' : ''; b.onclick = () => { S.theme = k; try { localStorage.setItem('rg.theme', k); } catch (e) {} buildTheme(); applyTheme(); }; el.appendChild(b); }); }
+applyTheme(); setInterval(applyTheme, 5 * 60e3); map.on('moveend', applyTheme);
+
 // settings
 function buildVessel() { const el = $('vessel'); el.innerHTML = ''; Object.entries(VESSELS).forEach(([k, v]) => { const b = document.createElement('button'); b.textContent = v[0]; b.className = k === S.vessel ? 'on' : ''; b.onclick = () => { S.vessel = k; try { localStorage.setItem('rg.vessel', k); } catch (e) {} buildVessel(); S.area = null; S.areaKey = ''; updateArea(); colorReefs(); }; el.appendChild(b); }); }
-$('setBtn').onclick = () => { buildVessel(); buildNotify(); $('settings').classList.add('on'); };
+$('setBtn').onclick = () => { buildVessel(); buildTheme(); buildNotify(); $('settings').classList.add('on'); };
 $('setClose').onclick = () => $('settings').classList.remove('on');
 $('settings').onclick = e => { if (e.target === $('settings')) $('settings').classList.remove('on'); };
 

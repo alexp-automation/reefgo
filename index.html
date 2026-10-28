@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f4f7f9" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0b1620" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f7f9">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>ReefGo</title>
@@ -23,10 +22,17 @@
   --shadow:0 1px 2px rgba(14,27,42,.06),0 8px 24px rgba(14,27,42,.10);
   --font:"Manrope",-apple-system,"SF Pro Text",system-ui,sans-serif; color-scheme:light;
 }
-@media (prefers-color-scheme:dark){:root{
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0b1620; --card:#132334; --fg:#eef3f7; --muted:#94a6b8; --line:#213449; --accent:#5cc3e0; --accent-soft:#163142;
   --ok:#3ccf7c; --ok-bg:#133b2a; --mid:#f2b134; --mid-bg:#3b2f10; --no:#ff7a66; --no-bg:#4a1f1a;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1620; --card:#132334; --fg:#eef3f7; --muted:#94a6b8; --line:#213449; --accent:#5cc3e0; --accent-soft:#163142;
+  --ok:#3ccf7c; --ok-bg:#133b2a; --mid:#f2b134; --mid-bg:#3b2f10; --no:#ff7a66; --no-bg:#4a1f1a;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.4); color-scheme:dark}
+/* night map: dim the base tiles only, markers stay bright */
+:root[data-theme="dark"] .leaflet-tile-pane{filter:brightness(.55) saturate(.7)}
+:root[data-theme="dark"] #map,:root[data-theme="dark"] .leaflet-container{background:#0b1620}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;overflow:hidden}
 body{position:fixed;inset:0;width:100%;overscroll-behavior:none;background:var(--bg);color:var(--fg);font:16px/1.45 var(--font);-webkit-font-smoothing:antialiased}
@@ -88,7 +94,27 @@ input{font:inherit}
 .sheet .grip{width:40px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 0;flex:none}
 .sheet .in{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
 .hero{border-radius:18px;padding:18px 18px 16px;background:var(--card);box-shadow:var(--shadow);position:relative}
-.hero.v0{background:var(--ok-bg)}.hero.v1{background:var(--mid-bg)}.hero.v2{background:var(--no-bg)}
+/* sea-state postcard: sky-to-water gradient plus layered waves; calmer for green, steeper for red */
+.sheet .in>*{flex:none}
+.hero{overflow:hidden;isolation:isolate}
+.hero::before,.hero::after{content:"";position:absolute;left:-10%;right:-10%;bottom:-6px;height:46%;background-repeat:repeat-x;background-position:bottom;background-size:420px 100%;pointer-events:none;z-index:-1}
+.hero.v0{background:linear-gradient(180deg,#eefaf4 0%,#d6f1ea 45%,#b7e4ec 100%)}
+.hero.v0::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 100' preserveAspectRatio='none'%3E%3Cpath d='M0 60 C70 50 140 70 210 60 S350 50 420 60 V100 H0Z' fill='%23ffffff' fill-opacity='.55'/%3E%3C/svg%3E")}
+.hero.v0::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 100' preserveAspectRatio='none'%3E%3Cpath d='M0 78 C90 70 150 86 210 78 S330 70 420 78 V100 H0Z' fill='%2389d4e3' fill-opacity='.45'/%3E%3C/svg%3E")}
+.hero.v1{background:linear-gradient(180deg,#fff7e6 0%,#ffe9bf 45%,#d9d4b6 100%)}
+.hero.v1::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 100' preserveAspectRatio='none'%3E%3Cpath d='M0 62 C35 44 70 80 105 62 S175 44 210 62 S280 80 315 62 S385 44 420 62 V100 H0Z' fill='%23ffffff' fill-opacity='.5'/%3E%3C/svg%3E")}
+.hero.v1::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 100' preserveAspectRatio='none'%3E%3Cpath d='M0 80 C30 66 60 94 90 80 S150 66 180 80 S240 94 270 80 S330 66 360 80 S405 94 420 80 V100 H0Z' fill='%23c9a85c' fill-opacity='.35'/%3E%3C/svg%3E")}
+.hero.v2{background:linear-gradient(180deg,#fdeae6 0%,#f3cfc8 40%,#8fa6b8 100%)}
+.hero.v2::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 100' preserveAspectRatio='none'%3E%3Cpath d='M0 66 C30 40 60 92 90 66 S150 40 180 66 S240 92 270 66 S330 40 360 66 S405 86 420 66 V100 H0Z' fill='%23ffffff' fill-opacity='.5'/%3E%3C/svg%3E")}
+.hero.v2::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 100' preserveAspectRatio='none'%3E%3Cpath d='M0 84 C25 62 50 100 75 84 S125 62 150 84 S200 100 225 84 S275 62 300 84 S350 100 375 84 S405 66 420 84 V100 H0Z' fill='%23324b63' fill-opacity='.4'/%3E%3C/svg%3E")}
+:root[data-theme="dark"] .hero::before{opacity:.22}:root[data-theme="dark"] .hero::after{opacity:.5}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hero::before{opacity:.22}:root:not([data-theme="light"]) .hero::after{opacity:.5}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hero.v0{background:linear-gradient(180deg,#0f3a30 0%,#0e4a4a 55%,#0b3550 100%)}
+:root:not([data-theme="light"]) .hero.v1{background:linear-gradient(180deg,#3a2c0f 0%,#4a3a14 55%,#2f3a3a 100%)}
+:root:not([data-theme="light"]) .hero.v2{background:linear-gradient(180deg,#4a1f1a 0%,#3b2a33 50%,#15283a 100%)}}
+:root[data-theme="dark"] .hero.v0{background:linear-gradient(180deg,#0f3a30 0%,#0e4a4a 55%,#0b3550 100%)}
+:root[data-theme="dark"] .hero.v1{background:linear-gradient(180deg,#3a2c0f 0%,#4a3a14 55%,#2f3a3a 100%)}
+:root[data-theme="dark"] .hero.v2{background:linear-gradient(180deg,#4a1f1a 0%,#3b2a33 50%,#15283a 100%)}
 .hero .eyebrow{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-right:36px}
 .hero h1{font-size:30px;line-height:1.1;font-weight:800;letter-spacing:-.02em;margin:6px 0 8px}
 .hero.v0 h1{color:var(--ok)}.hero.v1 h1{color:var(--mid)}.hero.v2 h1{color:var(--no)}
@@ -96,13 +122,15 @@ input{font:inherit}
 .hero .x{position:absolute;right:12px;top:12px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.08);display:grid;place-items:center;font-weight:800}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .two div{border-radius:12px;padding:8px 10px;background:rgba(255,255,255,.6)}
-@media (prefers-color-scheme:dark){.two div{background:rgba(0,0,0,.22)}.hero .x{background:rgba(255,255,255,.1)}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .two div{background:rgba(0,0,0,.22)}:root:not([data-theme="light"]) .hero .x{background:rgba(255,255,255,.1)}}
+:root[data-theme="dark"] .two div{background:rgba(0,0,0,.22)}:root[data-theme="dark"] .hero .x{background:rgba(255,255,255,.1)}
 .two b{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .two span{font-size:17px;font-weight:800}
 .two .t0{color:var(--ok)}.two .t1{color:var(--mid)}.two .t2{color:var(--no)}
 .facts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
 .facts div{background:rgba(255,255,255,.6);border-radius:12px;padding:8px 4px;text-align:center}
-@media (prefers-color-scheme:dark){.facts div{background:rgba(0,0,0,.22)}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .facts div{background:rgba(0,0,0,.22)}}
+:root[data-theme="dark"] .facts div{background:rgba(0,0,0,.22)}
 .facts b{display:block;font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
 .facts small{color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
 .week{display:flex;gap:5px}
@@ -234,6 +262,9 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
     <h2>Your boat</h2>
     <p class="muted">Thresholds for the “Go” verdict depend on what you ride.</p>
     <div class="seg" id="vessel"></div>
+    <h2>Night mode</h2>
+    <div class="seg" id="theme"></div>
+    <p class="muted" style="font-size:13px">Auto dims the app and the map from sunset to sunrise at your map position.</p>
     <h2>Alerts</h2>
     <label class="legend" style="gap:10px"><input type="checkbox" id="notifyOn" style="width:20px;height:20px;accent-color:var(--accent)"> Tell me when a window opens near my map</label>
     <p class="muted" style="font-size:13px" id="notifyHint">Checked each time you open ReefGo: if a green day appears in the week ahead for the area on your map, you get a notification. Push alerts while the app is closed come with the App Store version.</p>
@@ -250,6 +281,6 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
-<script src="app.js?v=18"></script>
+<script src="app.js?v=19"></script>
 </body>
 </html>
