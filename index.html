@@ -148,21 +148,22 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 .legend{display:flex;gap:10px;align-items:center;margin:6px 0;font-size:14px}.legend i{width:12px;height:12px;border-radius:50%;flex:none}
 
 /* onboarding */
-.onb{position:fixed;inset:0;z-index:3000;background:var(--bg);display:none;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 24px) 24px calc(env(safe-area-inset-bottom,0px) + 20px)}
+.onb{position:fixed;inset:0;z-index:3000;background:var(--bg);display:none;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top,0px) + 20px) 20px 0}
 .onb.on{display:flex}
-.onb .step{display:none;flex:1;flex-direction:column}
+.onb .step{display:none;flex:1;flex-direction:column;min-height:100%}
 .onb .step.on{display:flex}
-.onb .dots{display:flex;gap:6px;margin-bottom:28px}.onb .dots i{width:28px;height:4px;border-radius:2px;background:var(--line)}.onb .dots i.on{background:var(--accent)}
+.onb .dots{display:flex;gap:6px;margin-bottom:18px}.onb .dots i{width:28px;height:4px;border-radius:2px;background:var(--line)}.onb .dots i.on{background:var(--accent)}
 .onb .eyebrow{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
-.onb h2{font-size:30px;line-height:1.1;letter-spacing:-.02em;margin:6px 0 10px}
-.onb p{margin:0 0 14px;font-size:16px;color:var(--muted)}
+.onb h2{font-size:28px;line-height:1.1;letter-spacing:-.02em;margin:6px 0 8px}
+.onb p{margin:0 0 12px;font-size:15px;color:var(--muted)}
 .onb .seg button{padding:12px 16px;font-size:15px;border-radius:14px}
 .onb .spacer{flex:1}
+.onb .foot{position:sticky;bottom:0;background:var(--bg);padding:12px 0 calc(env(safe-area-inset-bottom,0px) + 16px);margin-top:12px}
 .onb .cta{display:block;width:100%;padding:15px;border-radius:14px;background:var(--accent);color:#fff;font-weight:800;font-size:16px;text-align:center}
-.onb .ghost{display:block;width:100%;padding:12px;font-weight:700;color:var(--muted);text-align:center;margin-top:4px}
-.onb .demo{border-radius:18px;padding:16px;margin:4px 0 14px}
-.onb .demo b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em}
-.onb .demo span{font-size:14px}
+.onb .ghost{display:block;width:100%;padding:12px 0 0;font-weight:700;color:var(--muted);text-align:center}
+.onb .demo{border-radius:14px;padding:10px 14px;margin:0 0 8px}
+.onb .demo b{display:block;font-size:20px;font-weight:800;letter-spacing:-.02em}
+.onb .demo span{font-size:13px}
 .onb .demo.v0{background:var(--ok-bg)}.onb .demo.v0 b{color:var(--ok)}
 .onb .demo.v1{background:var(--mid-bg)}.onb .demo.v1 b{color:var(--mid)}
 .onb .demo.v2{background:var(--no-bg)}.onb .demo.v2 b{color:var(--no)}
@@ -195,7 +196,7 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
     <p>The “Go” verdict depends on your boat. A jet ski gets beaten up by seas a 26-footer barely notices. You can change this later in settings.</p>
     <div class="seg" id="onbVessel"></div>
     <div class="spacer"></div>
-    <button class="cta" data-next="1">Continue</button>
+    <div class="foot"><button class="cta" data-next="1">Continue</button></div>
   </div>
   <div class="step" data-step="1">
     <div class="dots"><i class="on"></i><i class="on"></i><i></i></div>
@@ -204,8 +205,7 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
     <p>ReefGo covers the whole US coast. Share your location once and the map opens on your stretch of coast with the reefs you can actually reach.</p>
     <p>Your location stays on this phone. It is never stored or sent anywhere except to fetch the local forecast.</p>
     <div class="spacer"></div>
-    <button class="cta" id="onbLoc">Use my location</button>
-    <button class="ghost" data-next="2">I’ll search for my area instead</button>
+    <div class="foot"><button class="cta" id="onbLoc">Use my location</button><button class="ghost" data-next="2">I’ll search for my area instead</button></div>
   </div>
   <div class="step" data-step="2">
     <div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i></div>
@@ -217,7 +217,7 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
     <div class="demo v2"><b>No-go</b><span>Too much wind or sea for your boat. Stay home.</span></div>
     <p>Below the verdict: the numbers, the buoys, the tide, the fish and the rules.</p>
     <div class="spacer"></div>
-    <button class="cta" id="onbDone">Show me the map</button>
+    <div class="foot"><button class="cta" id="onbDone">Show me the map</button></div>
   </div>
 </div>
 
