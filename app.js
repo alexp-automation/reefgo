@@ -258,7 +258,9 @@ async function updateArea() {
   S.areaKey = key; $('area').hidden = false; $('areaH').textContent = 'Checking conditions…'; $('areaS').textContent = ''; $('areaDot').className = 'v';
   try { const fc = await forecastAt(c.lat, c.lng); if (key !== S.areaKey) return; const kday = S.days[S.day]; const s = dayStats(fc, kday); const v = verdicts(s); const cls = overall(v);
     S.area = { c: cls, s, v }; $('areaDot').className = 'v c' + cls; $('areaLbl').textContent = `Conditions here · ${dayLower(kday)} · ${WIN[S.win][0].toLowerCase()}`; $('areaH').textContent = headline(v);
-    const nx = nextWindow(fc); $('areaN').hidden = !(nx && cls !== 0); if (nx && cls !== 0) $('areaN').textContent = `Next window: ${dayName(nx.key)} · ${headline(nx.v)}`; if (nx) maybeNotify(nx, c);
+    const nx = nextWindow(fc); $('areaN').hidden = cls === 0; $('areaN').className = 'next ' + (nx ? 'n' + nx.cls : 'n2');
+    if (cls !== 0) $('areaN').textContent = !nx ? 'No window in the next 7 days' : nx.cls === 0 ? `Next window: ${dayName(nx.key)} · ${headline(nx.v)}` : `Best this week: ${dayName(nx.key)} · ${headline(nx.v)}`;
+    if (nx && nx.cls === 0) maybeNotify(nx, c);
     $('areaS').textContent = `${dirTxt(s.dir)} ${f0(s.windAvg)} kt · seas ${f1((s.wave || 0) * M2FT)} ft / ${f0(s.period)} s · water ${f0(F(s.sst))}°F`; }
   catch (e) { $('areaH').textContent = 'No forecast for this spot'; $('areaS').textContent = 'Move the map over coastal water'; }
 }
@@ -366,7 +368,8 @@ $('grip').onclick = closeReef;
 map.on('click', () => { if ($('sheet').classList.contains('on')) closeReef(); });
 
 // ---------- next window + alerts ----------
-function nextWindow(fc) { for (let i = 1; i < S.days.length; i++) { const st = dayStats(fc, S.days[i]); if (!st) continue; const v = verdicts(st); if (overall(v) === 0) return { key: S.days[i], s: st, v }; } return null; }
+// best day ahead: first green day, else the first yellow; cls tells which
+function nextWindow(fc) { let best = null; for (let i = 1; i < S.days.length; i++) { const st = dayStats(fc, S.days[i]); if (!st) continue; const v = verdicts(st); const c = overall(v); if (c === 0) return { key: S.days[i], s: st, v, cls: 0 }; if (c === 1 && !best) best = { key: S.days[i], s: st, v, cls: 1 }; } return best; }
 function notifyOn() { try { return localStorage.getItem('rg.notify') === '1'; } catch (e) { return false; } }
 function maybeNotify(nx, c) {
   if (!notifyOn() || !('Notification' in window) || Notification.permission !== 'granted') return;
@@ -375,7 +378,8 @@ function maybeNotify(nx, c) {
   try { new Notification(`ReefGo: window opens ${dayName(nx.key)}`, { body: `${headline(nx.v)}. Wind ${f0(nx.s.windAvg)} kt, seas ${f1((nx.s.wave || 0) * M2FT)} ft.`, icon: 'icon.svg', tag }); } catch (e) {}
 }
 function buildNotify() { const cb = $('notifyOn'); const ok = 'Notification' in window; cb.disabled = !ok; cb.checked = ok && notifyOn() && Notification.permission === 'granted';
-  if (!ok) $('notifyHint').textContent = 'Notifications are not available in this browser. On iPhone, add ReefGo to the Home Screen first.';
+  $('notifyHint').classList.toggle('warn', !ok);
+  if (!ok) $('notifyHint').textContent = 'Alerts are off in this browser. On iPhone they work only from the Home Screen: tap Share in Safari, choose “Add to Home Screen”, then open ReefGo from that icon and turn this on.';
   cb.onchange = async () => { if (cb.checked) { const p = await Notification.requestPermission(); if (p !== 'granted') { cb.checked = false; return; } try { localStorage.setItem('rg.notify', '1'); } catch (e) {} S.areaKey = ''; updateArea(); } else { try { localStorage.setItem('rg.notify', '0'); } catch (e) {} } }; }
 
 // settings

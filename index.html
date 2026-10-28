@@ -70,7 +70,8 @@ input{font:inherit}
 .area span{display:block;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .area small{color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 .area[hidden]{display:none}
-.area .next{color:var(--ok);font-weight:700}.area .next[hidden]{display:none}
+.area .next{color:var(--ok);font-weight:700;white-space:normal}.area .next.n1{color:var(--mid)}.area .next.n2{color:var(--muted);font-weight:600}.area .next[hidden]{display:none}
+.modal p.warn{color:var(--mid);font-weight:600}input:disabled{opacity:.35}
 
 /* markers */
 .mk{width:22px;height:22px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
@@ -249,6 +250,6 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
-<script src="app.js?v=17"></script>
+<script src="app.js?v=18"></script>
 </body>
 </html>
