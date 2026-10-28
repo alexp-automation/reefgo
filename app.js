@@ -13,7 +13,7 @@ const VESSELS = { pwc: ['Jet ski', 12, 16, 2.5, 3], kayak: ['Kayak / SUP', 8, 12
 const CITIES = [['Tampa, FL', 27.95, -82.46], ['Tarpon Springs, FL', 28.15, -82.76], ['Clearwater, FL', 27.97, -82.8], ['St. Petersburg, FL', 27.77, -82.64], ['Sarasota, FL', 27.34, -82.53], ['Fort Myers, FL', 26.64, -81.87], ['Naples, FL', 26.14, -81.79], ['Key West, FL', 24.56, -81.78], ['Miami, FL', 25.76, -80.19], ['Fort Lauderdale, FL', 26.12, -80.14], ['West Palm Beach, FL', 26.71, -80.05], ['Daytona Beach, FL', 29.21, -81.02], ['Jacksonville, FL', 30.33, -81.66], ['Pensacola, FL', 30.42, -87.22], ['Destin, FL', 30.39, -86.5], ['Panama City, FL', 30.16, -85.66], ['Crystal River, FL', 28.9, -82.59], ['Cedar Key, FL', 29.14, -83.03], ['Mobile, AL', 30.69, -88.04], ['Orange Beach, AL', 30.29, -87.57], ['Biloxi, MS', 30.4, -88.89], ['New Orleans, LA', 29.95, -90.07], ['Venice, LA', 29.28, -89.35], ['Galveston, TX', 29.3, -94.8], ['Freeport, TX', 28.95, -95.36], ['Corpus Christi, TX', 27.8, -97.4], ['Port Aransas, TX', 27.83, -97.06], ['South Padre Island, TX', 26.1, -97.17], ['Savannah, GA', 32.08, -81.1], ['Brunswick, GA', 31.15, -81.49], ['Charleston, SC', 32.78, -79.93], ['Myrtle Beach, SC', 33.69, -78.89], ['Wilmington, NC', 34.23, -77.94], ['Morehead City, NC', 34.72, -76.73], ['Nags Head, NC', 35.96, -75.63], ['Virginia Beach, VA', 36.85, -75.98], ['Ocean City, MD', 38.34, -75.08], ['Cape May, NJ', 38.94, -74.91], ['Atlantic City, NJ', 39.36, -74.42], ['New York, NY', 40.71, -74.01], ['Montauk, NY', 41.04, -71.95], ['Boston, MA', 42.36, -71.06], ['San Diego, CA', 32.72, -117.16], ['Los Angeles, CA', 33.94, -118.4], ['San Francisco, CA', 37.77, -122.42], ['Seattle, WA', 47.6, -122.33], ['Honolulu, HI', 21.31, -157.86]];
 const STATES = { FL: 'Florida', AL: 'Alabama', MS: 'Mississippi', LA: 'Louisiana', TX: 'Texas', GA: 'Georgia', SC: 'South Carolina', NC: 'North Carolina', VA: 'Virginia', MD: 'Maryland', DE: 'Delaware', NJ: 'New Jersey', NY: 'New York', CA: 'California', OR: 'Oregon', WA: 'Washington', HI: 'Hawaii' };
 
-const S = { reefs: [], tides: [], buoys: [], fish: null, fishAll: {}, buoysAt: null, reef: null, day: 0, days: [], fc: {}, cwf: {}, zone: {}, tideCache: {}, area: null, areaKey: '', vessel: 'pwc', sat: { on: false, date: null, layer: GIBS[0][1] } };
+const S = { reefs: [], tides: [], buoys: [], fish: null, cells: {}, cellPending: {}, buoysAt: null, reef: null, day: 0, days: [], fc: {}, cwf: {}, zone: {}, tideCache: {}, area: null, areaKey: '', vessel: 'pwc', sat: { on: false, date: null, layer: GIBS[0][1] } };
 try { S.vessel = localStorage.getItem('rg.vessel') || 'pwc'; } catch (e) {}
 const $ = id => document.getElementById(id);
 const f1 = x => x == null ? '—' : String(Math.round(x * 10) / 10);
@@ -169,17 +169,48 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Oc
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 13, maxZoom: 18, pane: 'overlayPane', opacity: .8, zIndex: 6 }).addTo(map);
 let satLayer = null, selMarker = null;
 const cluster = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 44, spiderfyOnMaxZoom: true, disableClusteringAtZoom: 13, showCoverageOnHover: false,
-  iconCreateFunction: c => L.divIcon({ html: `<div>${c.getChildCount()}</div>`, className: 'marker-cluster k' + (S.area ? S.area.c : 'x'), iconSize: [34, 34] }) });
+  iconCreateFunction: c => { let worst = -1; for (const m of c.getAllChildMarkers()) { const x = m.reef && m.reef.c; if (x === 0 || x === 1 || x === 2) worst = Math.max(worst, x); }
+    return L.divIcon({ html: `<div>${c.getChildCount()}</div>`, className: 'marker-cluster k' + (worst < 0 ? 'x' : worst), iconSize: [34, 34] }); } });
 map.addLayer(cluster);
-const mkIcon = (c, sel) => L.divIcon({ className: '', html: `<div class="mk c${c}${sel ? ' sel' : ''}"></div>`, iconSize: [22, 22], iconAnchor: [11, 11] });
-function areaClass() { return S.area ? S.area.c : 'x'; }
+const mkIcon = (c, sel) => L.divIcon({ className: '', html: `<div class="mk c${c == null ? 'x' : c}${sel ? ' sel' : ''}"></div>`, iconSize: [22, 22], iconAnchor: [11, 11] });
+const reefClass = r => r.c == null ? 'x' : r.c;
 function loadReefs(list) {
   S.reefs = list; const ms = list.map(r => { const m = L.marker([r.lat, r.lon], { icon: mkIcon('x', false) }); m.reef = r; m.bindTooltip(r.name || r.id, { direction: 'top', offset: [0, -10] }); m.on('click', () => openReef(r)); r.m = m; return m; });
   cluster.addLayers(ms);
 }
-function recolor() { const c = areaClass(); const b = map.getBounds().pad(.5); S.reefs.forEach(r => { if (b.contains([r.lat, r.lon])) r.m.setIcon(mkIcon(c, r === S.reef)); }); cluster.refreshClusters(); }
+// Per-cell forecasts: reefs in view are grouped into grid cells (size by zoom), one batched Open-Meteo request per 40 cells, each reef colored by its own cell for the selected day.
+function cellSize() { const z = map.getZoom(); return z >= 10 ? 0.25 : z >= 8 ? 0.5 : z >= 6 ? 1 : 2; }
+async function fetchCells(cells) {
+  cells.forEach(c => S.cellPending[c.key] = true);
+  try {
+    const lat = cells.map(c => c.lat.toFixed(3)).join(','), lon = cells.map(c => c.lon.toFixed(3)).join(',');
+    const H = 'wind_speed_10m,wind_gusts_10m,wind_direction_10m,temperature_2m,precipitation_probability';
+    const base = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${H}&wind_speed_unit=kn&timezone=auto&past_days=2&forecast_days=7`;
+    const arr = x => x == null ? null : Array.isArray(x) ? x : [x];
+    const [g, e, m] = await Promise.all([getJSON(base + '&models=gfs_seamless').then(arr), getJSON(base + '&models=ecmwf_ifs025').then(arr).catch(() => null),
+      getJSON(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=wave_height,wave_period,sea_surface_temperature&timezone=auto&forecast_days=7`).then(arr).catch(() => null)]);
+    cells.forEach((c, i) => { if (!g[i]) return; S.cells[c.key] = { g: g[i].hourly, e: e && e[i] ? e[i].hourly : g[i].hourly, m: m && m[i] ? m[i].hourly : { time: [], wave_height: [], wave_period: [], sea_surface_temperature: [] } }; });
+  } catch (err) {}
+  cells.forEach(c => delete S.cellPending[c.key]);
+}
+function paintCells(cells) {
+  const kday = S.days[S.day];
+  cells.forEach(c => { const fc = S.cells[c.key]; let cls = null; if (fc) { const st = dayStats(fc, kday); if (st) cls = overall(verdicts(st)); }
+    c.rs.forEach(r => { if (r.c !== cls) { r.c = cls; r.m.setIcon(mkIcon(cls, r === S.reef)); } }); });
+  cluster.refreshClusters();
+}
+let colorGen = 0;
+async function colorReefs() {
+  const size = cellSize(), b = map.getBounds().pad(.3), groups = {};
+  S.reefs.forEach(r => { if (!b.contains([r.lat, r.lon])) return; const k = `${size}:${Math.floor(r.lat / size)}:${Math.floor(r.lon / size)}`; (groups[k] || (groups[k] = { key: k, rs: [], lat: 0, lon: 0 })).rs.push(r); });
+  const cells = Object.values(groups); cells.forEach(c => { c.lat = c.rs.reduce((a, r) => a + r.lat, 0) / c.rs.length; c.lon = c.rs.reduce((a, r) => a + r.lon, 0) / c.rs.length; });
+  paintCells(cells);
+  const missing = cells.filter(c => !S.cells[c.key] && !S.cellPending[c.key]); if (!missing.length) return;
+  const gen = ++colorGen;
+  for (let i = 0; i < missing.length; i += 40) { await fetchCells(missing.slice(i, i + 40)); if (gen !== colorGen) return; paintCells(cells); }
+}
 let areaTimer = null;
-map.on('moveend', () => { try { const c = map.getCenter(); localStorage.setItem('rg.view', JSON.stringify({ lat: c.lat, lon: c.lng, z: map.getZoom() })); } catch (e) {} clearTimeout(areaTimer); areaTimer = setTimeout(updateArea, 500); });
+map.on('moveend', () => { try { const c = map.getCenter(); localStorage.setItem('rg.view', JSON.stringify({ lat: c.lat, lon: c.lng, z: map.getZoom() })); } catch (e) {} clearTimeout(areaTimer); areaTimer = setTimeout(() => { updateArea(); colorReefs(); }, 400); });
 async function updateArea() {
   const z = map.getZoom(); if (z < 7) { $('area').hidden = true; return; }
   const c = map.getCenter(); const key = c.lat.toFixed(1) + ',' + c.lng.toFixed(1); if (key === S.areaKey && S.area) { $('area').hidden = false; return; }
@@ -187,7 +218,7 @@ async function updateArea() {
   try { const fc = await forecastAt(c.lat, c.lng); if (key !== S.areaKey) return; const kday = S.days[S.day]; const s = dayStats(fc, kday); const v = verdicts(s); const cls = overall(v);
     S.area = { c: cls, s, v }; $('areaDot').className = 'v c' + cls; $('areaLbl').textContent = `Conditions here · ${dayLower(kday)}`; $('areaH').textContent = headline(v);
     const nx = nextWindow(fc); $('areaN').hidden = !(nx && cls !== 0); if (nx && cls !== 0) $('areaN').textContent = `Next window: ${dayName(nx.key)} · ${headline(nx.v)}`; if (nx) maybeNotify(nx, c);
-    $('areaS').textContent = `${dirTxt(s.dir)} ${f0(s.windAvg)} kt · seas ${f1((s.wave || 0) * M2FT)} ft / ${f0(s.period)} s · water ${f0(F(s.sst))}°F`; recolor(); }
+    $('areaS').textContent = `${dirTxt(s.dir)} ${f0(s.windAvg)} kt · seas ${f1((s.wave || 0) * M2FT)} ft / ${f0(s.period)} s · water ${f0(F(s.sst))}°F`; }
   catch (e) { $('areaH').textContent = 'No forecast for this spot'; $('areaS').textContent = 'Move the map over coastal water'; }
 }
 $('area').onclick = () => { const c = map.getCenter(); let best = null, bd = 1e9; S.reefs.forEach(r => { const d = (r.lat - c.lat) ** 2 + (r.lon - c.lng) ** 2; if (d < bd) { bd = d; best = r; } }); if (best) openReef(best); };
@@ -217,7 +248,7 @@ q.onblur = () => setTimeout(() => sug.classList.remove('on'), 200);
 // ---------- reef sheet ----------
 function weekHTML(fc) { return `<div class="week">` + S.days.map((k, i) => { const s = dayStats(fc, k); const c = s ? overall(verdicts(s)) : null; return `<button class="${i === S.day ? 'sel' : ''}" data-day="${i}">${i === 0 ? 'Now' : DOW[dowOf(k)]}<em>${+k.slice(8)}</em><i class="${c == null ? '' : 'c' + c}"></i></button>`; }).join('') + '</div>'; }
 async function openReef(r) {
-  if (S.reef && S.reef.m) S.reef.m.setIcon(mkIcon(areaClass(), false)); S.reef = r; r.m.setIcon(mkIcon(areaClass(), true));
+  if (S.reef && S.reef.m) S.reef.m.setIcon(mkIcon(reefClass(S.reef), false)); S.reef = r; r.m.setIcon(mkIcon(reefClass(r), true));
   const sh = $('sheet'), el = $('sheetIn'); sh.classList.add('on'); $('area').hidden = true;
   el.innerHTML = `<div class="hero"><div class="eyebrow">${esc(r.st)} · ${esc(r.src)}</div><h1>${esc(r.name || r.id)}</h1><p class="lead muted">Loading forecast…</p><button class="x" id="xBtn" aria-label="Close">×</button></div>`;
   $('xBtn').onclick = closeReef;
@@ -252,11 +283,11 @@ function renderReef(r, fc, zone, cwf, tst, td) {
     <div class="row"><button class="btn" id="satGo">Satellite view</button><a class="btn" target="_blank" rel="noopener" href="https://maps.apple.com/?ll=${r.lat},${r.lon}&q=${encodeURIComponent(r.name || 'Reef')}">Open in Maps</a></div>
     <p class="muted" style="font-size:11px;text-align:center;margin:0">Forecast estimate. Conditions can differ on site. Not for navigation. ${r.lat.toFixed(4)}, ${r.lon.toFixed(4)}</p>`;
   $('xBtn').onclick = closeReef;
-  el.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { S.day = +b.dataset.day; renderReef(r, fc, zone, cwf, tst, td); S.area = null; S.areaKey = ''; });
+  el.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { S.day = +b.dataset.day; renderReef(r, fc, zone, cwf, tst, td); S.area = null; S.areaKey = ''; colorReefs(); });
   const more = el.querySelector('[data-more]'); if (more) more.onclick = () => { el.querySelector('.fl.more').hidden = false; more.remove(); };
   $('satGo').onclick = () => { closeReef(); map.setView([r.lat, r.lon], Math.max(map.getZoom(), 9)); toggleSat(true); };
 }
-function closeReef() { $('sheet').classList.remove('on'); if (S.reef && S.reef.m) S.reef.m.setIcon(mkIcon(areaClass(), false)); S.reef = null; updateArea(); }
+function closeReef() { $('sheet').classList.remove('on'); if (S.reef && S.reef.m) S.reef.m.setIcon(mkIcon(reefClass(S.reef), false)); S.reef = null; updateArea(); }
 $('grip').onclick = closeReef;
 map.on('click', () => { if ($('sheet').classList.contains('on')) closeReef(); });
 
@@ -274,7 +305,7 @@ function buildNotify() { const cb = $('notifyOn'); const ok = 'Notification' in 
   cb.onchange = async () => { if (cb.checked) { const p = await Notification.requestPermission(); if (p !== 'granted') { cb.checked = false; return; } try { localStorage.setItem('rg.notify', '1'); } catch (e) {} S.areaKey = ''; updateArea(); } else { try { localStorage.setItem('rg.notify', '0'); } catch (e) {} } }; }
 
 // settings
-function buildVessel() { const el = $('vessel'); el.innerHTML = ''; Object.entries(VESSELS).forEach(([k, v]) => { const b = document.createElement('button'); b.textContent = v[0]; b.className = k === S.vessel ? 'on' : ''; b.onclick = () => { S.vessel = k; try { localStorage.setItem('rg.vessel', k); } catch (e) {} buildVessel(); S.area = null; S.areaKey = ''; updateArea(); }; el.appendChild(b); }); }
+function buildVessel() { const el = $('vessel'); el.innerHTML = ''; Object.entries(VESSELS).forEach(([k, v]) => { const b = document.createElement('button'); b.textContent = v[0]; b.className = k === S.vessel ? 'on' : ''; b.onclick = () => { S.vessel = k; try { localStorage.setItem('rg.vessel', k); } catch (e) {} buildVessel(); S.area = null; S.areaKey = ''; updateArea(); colorReefs(); }; el.appendChild(b); }); }
 $('setBtn').onclick = () => { buildVessel(); buildNotify(); $('settings').classList.add('on'); };
 $('setClose').onclick = () => $('settings').classList.remove('on');
 $('settings').onclick = e => { if (e.target === $('settings')) $('settings').classList.remove('on'); };
@@ -283,7 +314,7 @@ $('settings').onclick = e => { if (e.target === $('settings')) $('settings').cla
 function buildOnbVessel() { const el = $('onbVessel'); el.innerHTML = ''; Object.entries(VESSELS).forEach(([k, v]) => { const b = document.createElement('button'); b.textContent = v[0]; b.className = k === S.vessel ? 'on' : ''; b.onclick = () => { S.vessel = k; try { localStorage.setItem('rg.vessel', k); } catch (e) {} buildOnbVessel(); }; el.appendChild(b); }); }
 function onbStep(n) { document.querySelectorAll('#onb .step').forEach(s => s.classList.toggle('on', +s.dataset.step === n)); $('onb').scrollTop = 0; }
 function showOnb() { buildOnbVessel(); onbStep(0); $('onb').classList.add('on'); }
-function endOnb() { $('onb').classList.remove('on'); try { localStorage.setItem('rg.onb', '1'); } catch (e) {} S.area = null; S.areaKey = ''; updateArea(); }
+function endOnb() { $('onb').classList.remove('on'); try { localStorage.setItem('rg.onb', '1'); } catch (e) {} S.area = null; S.areaKey = ''; updateArea(); colorReefs(); }
 document.querySelectorAll('#onb [data-next]').forEach(b => b.onclick = () => onbStep(+b.dataset.next));
 $('onbLoc').onclick = () => { if (!navigator.geolocation) { onbStep(2); return; } $('onbLoc').textContent = 'Finding you…';
   navigator.geolocation.getCurrentPosition(p => { map.setView([p.coords.latitude, p.coords.longitude], 10); onbStep(2); }, () => { $('onbLoc').textContent = 'Location unavailable. Continue'; $('onbLoc').onclick = () => onbStep(2); }, { timeout: 8000 }); };
@@ -295,6 +326,6 @@ let onbDue = false; try { onbDue = !localStorage.getItem('rg.onb'); } catch (e) 
   const t = todayKey(); S.days = Array.from({ length: 7 }, (_, i) => addDays(t, i));
   const [reefs, tides, nd, fish] = await Promise.all([getJSON('reefs.json'), getJSON('tides.json').catch(() => []), getJSON('ndbc.json?' + Date.now()).catch(() => null), getJSON('data/fish.json').catch(() => null)]);
   S.fish = fish;
-  S.tides = tides; S.buoys = nd ? nd.stations : []; loadReefs(reefs); if (onbDue) showOnb(); else updateArea();
+  S.tides = tides; S.buoys = nd ? nd.stations : []; loadReefs(reefs); if (onbDue) showOnb(); else { updateArea(); colorReefs(); }
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
