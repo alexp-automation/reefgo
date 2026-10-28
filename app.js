@@ -15,8 +15,10 @@ const STATES = { FL: 'Florida', AL: 'Alabama', MS: 'Mississippi', LA: 'Louisiana
 
 // ?fresh in the URL wipes this phone's saved settings (vessel, map view, onboarding flag, alerts) to replay the first launch.
 if (/[?&]fresh\b/.test(location.search)) { try { Object.keys(localStorage).filter(k => k.startsWith('rg.')).forEach(k => localStorage.removeItem(k)); } catch (e) {} history.replaceState(null, '', location.pathname); }
-const S = { reefs: [], tides: [], buoys: [], fish: null, kd: null, cells: {}, cellPending: {}, buoysAt: null, reef: null, day: 0, days: [], fc: {}, cwf: {}, zone: {}, tideCache: {}, area: null, areaKey: '', vessel: 'pwc', sat: { on: false, date: null, layer: GIBS[0][1] } };
-try { S.vessel = localStorage.getItem('rg.vessel') || 'pwc'; } catch (e) {}
+// Time windows for the verdict: [label, start hour, end hour]; end 'set' = sunset, start 'rise' = sunrise (from the forecast's daily data).
+const WIN = { am: ['Morning', 7, 12], mid: ['Midday', 11, 16], pm: ['Evening', 15, 'set'], day: ['All day', 'rise', 'set'] };
+const S = { reefs: [], tides: [], buoys: [], win: 'am', fish: null, kd: null, cells: {}, cellPending: {}, buoysAt: null, reef: null, day: 0, days: [], fc: {}, cwf: {}, zone: {}, tideCache: {}, area: null, areaKey: '', vessel: 'pwc', sat: { on: false, date: null, layer: GIBS[0][1] } };
+try { S.vessel = localStorage.getItem('rg.vessel') || 'pwc'; S.win = WIN[localStorage.getItem('rg.win')] ? localStorage.getItem('rg.win') : 'am'; } catch (e) {}
 const $ = id => document.getElementById(id);
 const f1 = x => x == null ? '—' : String(Math.round(x * 10) / 10);
 const f0 = x => x == null ? '—' : String(Math.round(x));
@@ -38,10 +40,10 @@ const NWS = { headers: { 'Accept': 'application/geo+json' } };
 async function forecastAt(lat, lon) {
   const key = lat.toFixed(3) + ',' + lon.toFixed(3); if (S.fc[key]) return S.fc[key];
   const H = 'wind_speed_10m,wind_gusts_10m,wind_direction_10m,temperature_2m,precipitation_probability';
-  const base = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${H}&wind_speed_unit=kn&timezone=auto&past_days=7&forecast_days=7`;
+  const base = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${H}&daily=sunrise,sunset&wind_speed_unit=kn&timezone=auto&past_days=7&forecast_days=7`;
   const [g, e, m] = await Promise.all([getJSON(base + '&models=gfs_seamless'), getJSON(base + '&models=ecmwf_ifs025').catch(() => null),
     getJSON(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=wave_height,wave_period,sea_surface_temperature&timezone=auto&past_days=1&forecast_days=7`).catch(() => null)]);
-  return S.fc[key] = { g: g.hourly, e: e ? e.hourly : g.hourly, m: m ? m.hourly : { time: [], wave_height: [], wave_period: [], sea_surface_temperature: [] }, tz: g.timezone };
+  return S.fc[key] = { g: g.hourly, e: e ? e.hourly : g.hourly, m: m ? m.hourly : { time: [], wave_height: [], wave_period: [], sea_surface_temperature: [] }, d: g.daily, tz: g.timezone };
 }
 async function zoneAt(lat, lon) {
   const key = lat.toFixed(2) + ',' + lon.toFixed(2); if (S.zone[key] !== undefined) return S.zone[key];
@@ -115,8 +117,16 @@ function clarityHTML(r, fc) {
 }
 
 // ---------- verdict ----------
+// window hours for a day: sunrise rounded down, sunset rounded up (daily data from Open-Meteo), fallback 7 / 19
+function winHours(fc, key) {
+  const w = WIN[S.win]; let rise = 7, set = 19;
+  if (fc.d && fc.d.time) { const i = fc.d.time.indexOf(key); if (i >= 0 && fc.d.sunrise[i]) { rise = +fc.d.sunrise[i].slice(11, 13); set = +fc.d.sunset[i].slice(11, 13) + (+fc.d.sunset[i].slice(14, 16) > 0 ? 1 : 0); } }
+  const a = w[1] === 'rise' ? rise : w[1], b = w[2] === 'set' ? Math.max(set, a + 2) : w[2]; return [a, Math.min(b, 23)];
+}
+function winLabel(fc, key) { const [a, b] = winHours(fc, key); const h = x => x === 12 ? '12 pm' : x > 12 ? (x - 12) + ' pm' : x + ' am'; return `${WIN[S.win][0].toLowerCase()} ${h(a)}–${h(b)}`; }
 function dayStats(fc, key) {
-  const idx = []; fc.g.time.forEach((t, i) => { const h = +t.slice(11, 13); if (t.startsWith(key) && h >= 7 && h <= 15) idx.push(i); });
+  const [wa, wb] = winHours(fc, key);
+  const idx = []; fc.g.time.forEach((t, i) => { const h = +t.slice(11, 13); if (t.startsWith(key) && h >= wa && h <= wb) idx.push(i); });
   if (!idx.length) return null;
   const g = fc.g, e = fc.e, m = fc.m; const mi = {}; m.time.forEach((t, i) => mi[t] = i);
   const w = idx.map(i => Math.max(g.wind_speed_10m[i] ?? 0, e.wind_speed_10m[i] ?? 0));
@@ -124,11 +134,11 @@ function dayStats(fc, key) {
   const pick = k => idx.map(i => mi[g.time[i]] != null ? m[k][mi[g.time[i]]] : null).filter(x => x != null);
   const wv = pick('wave_height'), pe = pick('wave_period'), sst = pick('sea_surface_temperature');
   const mid = idx[Math.floor(idx.length / 2)]; const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
-  let last = null; const t7 = key + 'T07:00';
+  let last = null; const t7 = key + 'T' + String(wa).padStart(2, '0') + ':00';
   g.time.forEach((t, i) => { if (t < t7 && Math.max(g.wind_speed_10m[i] ?? 0, e.wind_speed_10m[i] ?? 0) > 15) last = t; });
   const since = last ? (new Date(t7) - new Date(last)) / 864e5 : 9;
   return { windAvg: avg(w), windMax: Math.max(...w), gust: Math.max(...gu), dir: g.wind_direction_10m[mid], wave: wv.length ? Math.max(...wv) : null, period: pe.length ? Math.min(...pe) : null,
-    sst: sst.length ? sst[0] : null, tmax: Math.max(...idx.map(i => g.temperature_2m[i])), rain: Math.max(...idx.map(i => g.precipitation_probability[i] ?? 0)), since, gAvg: avg(idx.map(i => g.wind_speed_10m[i] ?? 0)), eAvg: avg(idx.map(i => e.wind_speed_10m[i] ?? 0)) };
+    wa, wb, sst: sst.length ? sst[0] : null, tmax: Math.max(...idx.map(i => g.temperature_2m[i])), rain: Math.max(...idx.map(i => g.precipitation_probability[i] ?? 0)), since, gAvg: avg(idx.map(i => g.wind_speed_10m[i] ?? 0)), eAvg: avg(idx.map(i => e.wind_speed_10m[i] ?? 0)) };
 }
 function verdicts(s, cl) {
   const V = VESSELS[S.vessel]; let ride = 0, dive = 0; const why = [];
@@ -139,7 +149,7 @@ function verdicts(s, cl) {
   if (wf > 2.5) dive = 2; else if (wf > 2) { dive = Math.max(dive, 1); why.push('Seas over 2 ft hide the boat from a diver at the surface'); } else if (wf > 1.5 && p <= 4) { dive = Math.max(dive, 1); why.push('Short chop: hard to see the boat from the water'); }
   if (s.since < 2) { dive = Math.max(dive, 1); why.push(s.since < 1 ? 'Water is stirred up: strong wind less than a day ago' : `Water still clearing: strong wind ${f1(s.since)} days ago`); }
   if (cl && cl.hi < 10) { dive = Math.max(dive, 1); why.push(`Satellite saw murky water (about ${cl.lo}–${cl.hi} ft) ${cl.age <= 1 ? 'yesterday' : cl.age + ' days ago'}`); }
-  if (s.windAvg < 8) why.push('Calm morning. Expect a sea breeze of 8–10 kt after 3 pm; be on the reef early');
+  if (s.windAvg < 8 && (S.win === 'am' || S.win === 'day')) why.push('Calm morning. Expect a sea breeze of 8–10 kt after 3 pm; be on the reef early');
   if (Math.abs(s.gAvg - s.eAvg) > 5) why.push(`Models disagree (GFS ${f0(s.gAvg)}, ECMWF ${f0(s.eAvg)} kt); the worse one is used`);
   return { ride, dive, why };
 }
@@ -215,11 +225,11 @@ async function fetchCells(cells) {
   try {
     const lat = cells.map(c => c.lat.toFixed(3)).join(','), lon = cells.map(c => c.lon.toFixed(3)).join(',');
     const H = 'wind_speed_10m,wind_gusts_10m,wind_direction_10m,temperature_2m,precipitation_probability';
-    const base = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${H}&wind_speed_unit=kn&timezone=auto&past_days=2&forecast_days=7`;
+    const base = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${H}&daily=sunrise,sunset&wind_speed_unit=kn&timezone=auto&past_days=2&forecast_days=7`;
     const arr = x => x == null ? null : Array.isArray(x) ? x : [x];
     const [g, e, m] = await Promise.all([getJSON(base + '&models=gfs_seamless').then(arr), getJSON(base + '&models=ecmwf_ifs025').then(arr).catch(() => null),
       getJSON(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=wave_height,wave_period,sea_surface_temperature&timezone=auto&forecast_days=7`).then(arr).catch(() => null)]);
-    cells.forEach((c, i) => { if (!g[i]) return; S.cells[c.key] = { g: g[i].hourly, e: e && e[i] ? e[i].hourly : g[i].hourly, m: m && m[i] ? m[i].hourly : { time: [], wave_height: [], wave_period: [], sea_surface_temperature: [] } }; });
+    cells.forEach((c, i) => { if (!g[i]) return; S.cells[c.key] = { g: g[i].hourly, e: e && e[i] ? e[i].hourly : g[i].hourly, m: m && m[i] ? m[i].hourly : { time: [], wave_height: [], wave_period: [], sea_surface_temperature: [] }, d: g[i].daily }; });
   } catch (err) {}
   cells.forEach(c => delete S.cellPending[c.key]);
 }
@@ -246,7 +256,7 @@ async function updateArea() {
   const c = map.getCenter(); const key = c.lat.toFixed(1) + ',' + c.lng.toFixed(1); if (key === S.areaKey && S.area) { $('area').hidden = false; return; }
   S.areaKey = key; $('area').hidden = false; $('areaH').textContent = 'Checking conditions…'; $('areaS').textContent = ''; $('areaDot').className = 'v';
   try { const fc = await forecastAt(c.lat, c.lng); if (key !== S.areaKey) return; const kday = S.days[S.day]; const s = dayStats(fc, kday); const v = verdicts(s); const cls = overall(v);
-    S.area = { c: cls, s, v }; $('areaDot').className = 'v c' + cls; $('areaLbl').textContent = `Conditions here · ${dayLower(kday)}`; $('areaH').textContent = headline(v);
+    S.area = { c: cls, s, v }; $('areaDot').className = 'v c' + cls; $('areaLbl').textContent = `Conditions here · ${dayLower(kday)} · ${WIN[S.win][0].toLowerCase()}`; $('areaH').textContent = headline(v);
     const nx = nextWindow(fc); $('areaN').hidden = !(nx && cls !== 0); if (nx && cls !== 0) $('areaN').textContent = `Next window: ${dayName(nx.key)} · ${headline(nx.v)}`; if (nx) maybeNotify(nx, c);
     $('areaS').textContent = `${dirTxt(s.dir)} ${f0(s.windAvg)} kt · seas ${f1((s.wave || 0) * M2FT)} ft / ${f0(s.period)} s · water ${f0(F(s.sst))}°F`; }
   catch (e) { $('areaH').textContent = 'No forecast for this spot'; $('areaS').textContent = 'Move the map over coastal water'; }
@@ -295,25 +305,27 @@ function renderReef(r, fc, zone, cwf, tst, td) {
   const per = z ? z.periods.filter(p => S.day === 0 ? /TODAY|THIS AFTERNOON|TONIGHT/.test(p.name) : p.name === dn || p.name === dn + ' NIGHT') : [];
   const tides = td.filter(p => p.t.startsWith(key)).map(p => { const [hh, mm] = p.t.slice(11, 16).split(':').map(Number); const w = x => `${String(((hh + x) + 24) % 24).padStart(2, '0')}:${String(mm).padStart(2, '0')}`; return { h: p.t.slice(11, 16), type: p.type === 'H' ? 'High' : 'Low', slack: `${w(-1)}–${w(1)}` }; });
   const g = fc.g, e = fc.e, m = fc.m; const mi = {}; m.time.forEach((t, i) => mi[t] = i); let rows = '';
-  g.time.forEach((t, i) => { const hh = +t.slice(11, 13); if (!t.startsWith(key) || hh < 6 || hh > 18) return; const j = mi[t]; rows += `<tr><td>${hh}:00</td><td>${f0(g.wind_speed_10m[i])} / ${f0(e.wind_speed_10m[i])} ${dirTxt(g.wind_direction_10m[i])}</td><td>${f0(Math.max(g.wind_gusts_10m[i] ?? 0, e.wind_gusts_10m[i] ?? 0))}</td><td>${j != null && m.wave_height[j] != null ? f1(m.wave_height[j] * M2FT) + ' ft / ' + f0(m.wave_period[j]) + ' s' : '—'}</td></tr>`; });
+  g.time.forEach((t, i) => { const hh = +t.slice(11, 13); if (!t.startsWith(key) || hh < 5 || hh > 21) return; const j = mi[t]; rows += `<tr class="${hh >= s.wa && hh <= s.wb ? 'inwin' : ''}"><td>${hh}:00</td><td>${f0(g.wind_speed_10m[i])} / ${f0(e.wind_speed_10m[i])} ${dirTxt(g.wind_direction_10m[i])}</td><td>${f0(Math.max(g.wind_gusts_10m[i] ?? 0, e.wind_gusts_10m[i] ?? 0))}</td><td>${j != null && m.wave_height[j] != null ? f1(m.wave_height[j] * M2FT) + ' ft / ' + f0(m.wave_period[j]) + ' s' : '—'}</td></tr>`; });
   const meta = [r.depth ? `${f0(r.depth)} ft deep` : null, r.relief ? `${f0(r.relief)} ft relief` : null, r.mat, r.date && !/^00/.test(r.date) ? `deployed ${r.date}` : null].filter(Boolean).join(' · ');
   el.innerHTML = `
-    <div class="hero v${hc}"><div class="eyebrow">${esc(r.st)} · ${dayName(key)}</div><h1>${headline(v)}</h1><p class="lead">${lead(s, v, z, fc)}</p>
+    <div class="hero v${hc}"><div class="eyebrow">${esc(r.st)} · ${dayName(key)} · ${esc(winLabel(fc, key))}</div><h1>${headline(v)}</h1><p class="lead">${lead(s, v, z, fc)}</p>
       <div class="two"><div><b>Go</b><span class="t${v.ride}">${RIDE_TXT[v.ride]}</span></div><div><b>Dive</b><span class="t${v.dive}">${DIVE_TXT[v.dive]}</span></div></div>
       <div class="facts"><div><b>${f0(s.windAvg)} kt</b><small>wind ${dirTxt(s.dir)}</small></div><div><b>${f0(s.gust)} kt</b><small>gusts</small></div><div><b>${f1((s.wave || 0) * M2FT)} ft</b><small>seas · ${f0(s.period)} s</small></div><div><b>${f0(F(s.sst))}°</b><small>water °F</small></div></div>
       <button class="x" id="xBtn" aria-label="Close">×</button></div>
     ${weekHTML(fc, cl)}
+    <div class="wins">${Object.entries(WIN).map(([k, w]) => `<button class="${k === S.win ? 'on' : ''}" data-win="${k}">${w[0]}</button>`).join('')}</div>
     <div class="card"><h3>${esc(r.name || r.id)}</h3><p style="margin:0;font-size:14px">${esc(r.desc || '')}${meta ? `<br><span class="muted">${esc(meta)}</span>` : ''}</p></div>
     ${buoyHTML(r.lat, r.lon)}
     ${clarityHTML(r, fc)}
     ${fishHTML(r, key)}
     ${v.why.length ? `<div class="card"><h3>Why</h3><ul class="why">${v.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
     ${tides.length ? `<div class="card"><h3>Tide · ${esc(tst.n)}</h3><div class="kv">${tides.map(t => `<span>${t.type} ${t.h}</span><b>slack ${t.slack}</b>`).join('')}</div><p class="muted" style="margin:6px 0 0;font-size:12px">Slack water is the easy window to launch and retrieve.</p></div>` : ''}
-    <details><summary>Hour by hour</summary><div class="d"><table><tr><th>Hour</th><th>Wind GFS / ECMWF</th><th>Gust</th><th>Seas</th></tr>${rows}</table><p class="muted" style="font-size:12px">Knots. The worse of two models drives the verdict. Air ${f0(F(s.tmax))}°F, rain ${f0(s.rain)}%.</p></div></details>
+    <details><summary>Hour by hour</summary><div class="d"><table><tr><th>Hour</th><th>Wind GFS / ECMWF</th><th>Gust</th><th>Seas</th></tr>${rows}</table><p class="muted" style="font-size:12px">Knots. Highlighted rows are your ${esc(winLabel(fc, key))} window. The worse of two models drives the verdict. Air ${f0(F(s.tmax))}°F, rain ${f0(s.rain)}%.</p></div></details>
     ${z ? `<details><summary>NWS marine forecast · ${esc(zone.id)}</summary><div class="d">${z.sca ? `<p style="margin:0 0 8px;color:var(--no);font-weight:700">${esc(z.sca)}</p>` : ''}<pre class="cwf">${esc(per.length ? per.map(p => p.name + ': ' + p.text).join('\n\n') : 'This day is not yet in the NWS marine forecast.')}</pre><p class="muted" style="font-size:12px">${esc(zone.name)}</p></div></details>` : ''}
     <div class="row"><button class="btn" id="satGo">Satellite view</button><a class="btn" target="_blank" rel="noopener" href="https://maps.apple.com/?ll=${r.lat},${r.lon}&q=${encodeURIComponent(r.name || 'Reef')}">Open in Maps</a></div>
     <p class="muted" style="font-size:11px;text-align:center;margin:0">Forecast estimate. Conditions can differ on site. Not for navigation. ${r.lat.toFixed(4)}, ${r.lon.toFixed(4)}</p>`;
   $('xBtn').onclick = closeReef;
+  el.querySelectorAll('[data-win]').forEach(b => b.onclick = () => { S.win = b.dataset.win; try { localStorage.setItem('rg.win', S.win); } catch (e) {} renderReef(r, fc, zone, cwf, tst, td); S.area = null; S.areaKey = ''; colorReefs(); });
   el.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { S.day = +b.dataset.day; renderReef(r, fc, zone, cwf, tst, td); S.area = null; S.areaKey = ''; colorReefs(); });
   const more = el.querySelector('[data-more]'); if (more) more.onclick = () => { el.querySelector('.fl.more').hidden = false; more.remove(); };
   $('satGo').onclick = () => { closeReef(); map.setView([r.lat, r.lon], Math.max(map.getZoom(), 9)); toggleSat(true); };
