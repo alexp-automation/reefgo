@@ -197,7 +197,7 @@ function fishHTML(r, key) {
   const row = x => `<div class="fr">${x.sp.img ? `<img src="${x.sp.img}" alt="" loading="lazy">` : '<i class="noimg"></i>'}<div class="ft"><b>${esc(x.sp.name)}</b><span>${x.rule ? esc([x.rule.size !== 'none' && x.rule.size !== '—' ? 'min ' + x.rule.size : null, 'bag ' + x.rule.bag].filter(Boolean).join(' · ')) : `<i>${esc(x.sp.sci)}</i>`}</span>${x.rule && x.rule.note ? `<small>${esc(x.rule.note)}${x.rule.verify ? ' · verify' : ''}</small>` : x.rule && x.rule.verify ? '<small>Verify on myfwc.com</small>' : ''}</div><em class="pill ${x.st}">${PILL[x.st]}</em></div>`;
   const first = f.list.slice(0, 7), rest = f.list.slice(7);
   return `<div class="card fish"><h3>Fish here · ${head}</h3><div class="fl">${first.map(row).join('')}</div>${rest.length ? `<div class="fl more" hidden>${rest.map(row).join('')}</div><button class="link" data-more>Show ${rest.length} more</button>` : ''}
-    <p class="muted" style="margin:8px 0 0;font-size:12px">${f.fl ? esc(S.fish.flNoSpear) + ' Snapshot of FWC rules; seasons change yearly. ' : `Size, bag and season limits are set by ${esc(f.name)}. `}<a href="${f.url}" target="_blank" rel="noopener">${f.fl ? 'FWC rules' : esc(f.name) + ' rules'}</a>. Species guessed from reef depth${r.depth ? ` (${f0(r.depth)} ft)` : ''}, not a survey.</p></div>`;
+    <p class="muted" style="margin:8px 0 0;font-size:12px">${f.fl ? 'Open: season open on this day in these waters, with the minimum size and daily bag. Closed: no harvest that day. Protected: never. ' + esc(S.fish.flNoSpear) + ' Snapshot of FWC rules; seasons change yearly. ' : `Size, bag and season limits are set by ${esc(f.name)}. `}<a href="${f.url}" target="_blank" rel="noopener">${f.fl ? 'FWC rules' : esc(f.name) + ' rules'}</a>. Species guessed from reef depth${r.depth ? ` (${f0(r.depth)} ft)` : ''}, not a survey.</p></div>`;
 }
 
 // ---------- map ----------
@@ -292,6 +292,9 @@ function toggleSat(force) { S.sat.on = force == null ? !S.sat.on : force; $('sat
 $('satBtn').onclick = () => toggleSat();
 S.sat.date = addDays(todayKey(), -1); buildSat();
 
+// brand → home: close everything, drop the satellite layer, fly to your location if known, else to the last map view
+function goHome() { closeReef(); $('settings').classList.remove('on'); if (S.sat.on) toggleSat(false); if (meDot) map.setView(meDot.getLatLng(), 10); }
+$('brand').onclick = goHome;
 // location + search
 // "You are here": blue dot with an accuracy circle, kept on the map and refreshed on every tap
 let meDot = null, meRing = null;
@@ -345,11 +348,11 @@ function renderReef(r, fc, zone, cwf, tst, td) {
     <div class="card"><h3>${esc(r.name || r.id)}</h3><p style="margin:0;font-size:14px">${esc(r.desc || '')}${meta ? `<br><span class="muted">${esc(meta)}</span>` : ''}</p></div>
     ${buoyHTML(r.lat, r.lon)}
     ${clarityHTML(r, fc)}
+    ${v.why.length ? `<div class="card"><h3>Why this verdict</h3><ul class="why">${v.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
     ${fishHTML(r, key)}
-    ${v.why.length ? `<div class="card"><h3>Why</h3><ul class="why">${v.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
     ${tides.length ? `<div class="card"><h3>Tide · ${esc(tst.n)}</h3><div class="kv">${tides.map(t => `<span>${t.type} ${t.h}</span><b>slack ${t.slack}</b>`).join('')}</div><p class="muted" style="margin:6px 0 0;font-size:12px">Slack water is the easy window to launch and retrieve.</p></div>` : ''}
-    <details><summary>Hour by hour</summary><div class="d"><table><tr><th>Hour</th><th>Wind GFS / ECMWF</th><th>Gust</th><th>Seas</th></tr>${rows}</table><p class="muted" style="font-size:12px">Knots. Highlighted rows are your ${esc(winLabel(fc, key))} window. The worse of two models drives the verdict. Air ${f0(F(s.tmax))}°F, rain ${f0(s.rain)}%.</p></div></details>
-    ${z ? `<details><summary>NWS marine forecast · ${esc(zone.id)}</summary><div class="d">${z.sca ? `<p style="margin:0 0 8px;color:var(--no);font-weight:700">${esc(z.sca)}</p>` : ''}<pre class="cwf">${esc(per.length ? per.map(p => p.name + ': ' + p.text).join('\n\n') : 'This day is not yet in the NWS marine forecast.')}</pre><p class="muted" style="font-size:12px">${esc(zone.name)}</p></div></details>` : ''}
+    <details><summary>Hour by hour</summary><div class="d"><table><tr><th>Hour</th><th>Wind, US / EU model</th><th>Gusts</th><th>Seas</th></tr>${rows}</table><p class="muted" style="font-size:12px">Knots. Two weather models, the American GFS and the European ECMWF; the worse one drives the verdict. Highlighted rows are your ${esc(winLabel(fc, key))} window. Air ${f0(F(s.tmax))}°F, rain ${f0(s.rain)}%.</p></div></details>
+    ${z ? `<details><summary>Official NWS forecast · ${esc(zone.id)}</summary><div class="d">${z.sca ? `<p style="margin:0 0 8px;color:var(--no);font-weight:700">${esc(z.sca)}</p>` : ''}<pre class="cwf">${esc(per.length ? per.map(p => p.name + ': ' + p.text).join('\n\n') : 'This day is not yet in the NWS marine forecast.')}</pre><p class="muted" style="font-size:12px">${esc(zone.name)}</p></div></details>` : ''}
     <div class="row"><button class="btn" id="satGo">Satellite view</button><a class="btn" target="_blank" rel="noopener" href="https://maps.apple.com/?ll=${r.lat},${r.lon}&q=${encodeURIComponent(r.name || 'Reef')}">Open in Maps</a></div>
     <p class="muted" style="font-size:11px;text-align:center;margin:0">Forecast estimate. Conditions can differ on site. Not for navigation. ${r.lat.toFixed(4)}, ${r.lon.toFixed(4)}</p>`;
   $('xBtn').onclick = closeReef;
