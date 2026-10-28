@@ -250,7 +250,7 @@ async function colorReefs() {
   for (let i = 0; i < missing.length; i += 40) { await fetchCells(missing.slice(i, i + 40)); if (gen !== colorGen) return; paintCells(cells); }
 }
 let areaTimer = null;
-map.on('moveend', () => { try { const c = map.getCenter(); localStorage.setItem('rg.view', JSON.stringify({ lat: c.lat, lon: c.lng, z: map.getZoom() })); } catch (e) {} clearTimeout(areaTimer); areaTimer = setTimeout(() => { updateArea(); colorReefs(); }, 400); });
+map.on('moveend', () => { try { const c = map.getCenter(); localStorage.setItem('rg.view', JSON.stringify({ lat: c.lat, lon: c.lng, z: map.getZoom() })); } catch (e) {} clearTimeout(areaTimer); areaTimer = setTimeout(() => { updateArea(); colorReefs(); if (S.sat.on) probeSat(); }, 400); });
 async function updateArea() {
   const z = map.getZoom(); if (z < 7) { $('area').hidden = true; return; }
   const c = map.getCenter(); const key = c.lat.toFixed(1) + ',' + c.lng.toFixed(1); if (key === S.areaKey && S.area) { $('area').hidden = false; return; }
@@ -265,10 +265,28 @@ $('area').onclick = () => { const c = map.getCenter(); let best = null, bd = 1e9
 
 // satellite
 function satUrl() { return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${S.sat.layer}/default/${S.sat.date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`; }
-function applySat() { if (satLayer) { satLayer.remove(); satLayer = null; } if (!S.sat.on) return; satLayer = L.tileLayer(satUrl(), { maxNativeZoom: 9, maxZoom: 18, opacity: .9, attribution: 'NASA GIBS', zIndex: 5 }).addTo(map); }
+function applySat() { if (satLayer) { satLayer.remove(); satLayer = null; } if (!S.sat.on) return; satLayer = L.tileLayer(satUrl(), { maxNativeZoom: 9, maxZoom: 18, opacity: .9, attribution: 'NASA GIBS', zIndex: 5 }).addTo(map); probeSat(); }
+// Probe one z7 tile at the map center for every sensor: GIBS returns a black tile when the sensor had no pass or no data there. Dim those chips and switch to a sensor that has an image.
+S.sat.avail = {}; let probeGen = 0;
+function tileXY(lat, lon, z) { const n = 2 ** z; const x = Math.floor((lon + 180) / 360 * n); const r = lat * Math.PI / 180; const y = Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n); return { x, y }; }
+function tileMean(url) { return new Promise(ok => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => { try { const c = document.createElement('canvas'); c.width = c.height = 16; const x = c.getContext('2d'); x.drawImage(im, 0, 0, 16, 16); const p = x.getImageData(0, 0, 16, 16).data; let t = 0; for (let i = 0; i < p.length; i += 4) t += p[i] + p[i + 1] + p[i + 2]; ok(t / (p.length / 4) / 3); } catch (e) { ok(null); } }; im.onerror = () => ok(0); im.src = url; }); }
+async function probeSat() {
+  const gen = ++probeGen; const c = map.getCenter(); const { x, y } = tileXY(c.lat, c.lng, 7); const d = S.sat.date;
+  const res = await Promise.all(GIBS.map(async ([n, id]) => { const key = `${id}|${d}|${x}|${y}`; if (S.sat.avail[key] === undefined) S.sat.avail[key] = await tileMean(`https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${id}/default/${d}/GoogleMapsCompatible_Level9/7/${y}/${x}.jpg`); return [n, id, S.sat.avail[key]]; }));
+  if (gen !== probeGen || !S.sat.on) return;
+  const ok = res.filter(r => r[2] === null || r[2] > 8); const cur = res.find(r => r[1] === S.sat.layer); const dayTxt = d === todayKey() ? 'today' : d === addDays(todayKey(), -1) ? 'yesterday' : `${MON[+d.slice(5, 7) - 1]} ${+d.slice(8)}`;
+  let hint = 'True-color photo, one pass per sensor per day. Black or blank: no pass or clouds here. Try another sensor or day.';
+  if (cur && cur[2] !== null && cur[2] <= 8) { if (ok.length) { hint = `${cur[0]} has no image here for ${dayTxt}. Showing ${ok[0][0]} instead.`; S.sat.layer = ok[0][1]; S.sat.note = [d + S.sat.layer, hint]; if (satLayer) satLayer.setUrl(satUrl()); } else hint = `No sensor has an image here for ${dayTxt}. Try another day.`; }
+  else if (S.sat.note && S.sat.note[0] === d + S.sat.layer) hint = S.sat.note[1];
+  S.sat.off = new Set(res.filter(r => r[2] !== null && r[2] <= 8).map(r => r[1])); buildSat(); $('satbar').querySelector('.sathint').textContent = hint;
+}
 function buildSat() { const t = todayKey(); const bar = $('satbar'); bar.innerHTML = '';
-  for (let i = 0; i < 7; i++) { const k = addDays(t, -i); const b = document.createElement('button'); b.className = 'chip' + (k === S.sat.date ? ' on' : ''); b.textContent = i === 0 ? 'Today' : i === 1 ? 'Yesterday' : `${MON[+k.slice(5, 7) - 1]} ${+k.slice(8)}`; b.onclick = () => { S.sat.date = k; buildSat(); applySat(); }; bar.appendChild(b); }
-  GIBS.forEach(([n, id]) => { const b = document.createElement('button'); b.className = 'chip' + (id === S.sat.layer ? ' on' : ''); b.textContent = n; b.onclick = () => { S.sat.layer = id; buildSat(); applySat(); }; bar.appendChild(b); }); }
+  const row = label => { const r = document.createElement('div'); r.className = 'satrow'; const l = document.createElement('span'); l.className = 'satlbl'; l.textContent = label; r.appendChild(l); bar.appendChild(r); return r; };
+  const days = row('Day');
+  for (let i = 0; i < 7; i++) { const k = addDays(t, -i); const b = document.createElement('button'); b.className = 'chip' + (k === S.sat.date ? ' on' : ''); b.textContent = i === 0 ? 'Today' : i === 1 ? 'Yesterday' : `${MON[+k.slice(5, 7) - 1]} ${+k.slice(8)}`; b.onclick = () => { S.sat.date = k; S.sat.off = null; buildSat(); applySat(); }; days.appendChild(b); }
+  const sens = row('Sensor');
+  GIBS.forEach(([n, id]) => { const b = document.createElement('button'); b.className = 'chip' + (id === S.sat.layer ? ' on' : '') + (S.sat.off && S.sat.off.has(id) ? ' off' : ''); b.textContent = n; b.title = S.sat.off && S.sat.off.has(id) ? 'No image here for this day' : ''; b.onclick = () => { S.sat.layer = id; buildSat(); applySat(); }; sens.appendChild(b); });
+  const hint = document.createElement('div'); hint.className = 'sathint'; hint.textContent = 'True-color photo, one pass per sensor per day. Black or blank: no pass or clouds here. Try another sensor or day.'; bar.appendChild(hint); }
 function toggleSat(force) { S.sat.on = force == null ? !S.sat.on : force; $('satBtn').classList.toggle('on', S.sat.on); $('satbar').classList.toggle('on', S.sat.on); applySat(); }
 $('satBtn').onclick = () => toggleSat();
 S.sat.date = addDays(todayKey(), -1); buildSat();

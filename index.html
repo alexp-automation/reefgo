@@ -53,10 +53,13 @@ input{font:inherit}
 .sug.on{display:block}
 .sug button{display:block;width:100%;text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);font-size:14px}
 .sug button b{font-weight:800}.sug button span{color:var(--muted);font-size:12px;margin-left:6px}
-.satbar{position:absolute;z-index:1000;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 58px);display:none;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
-.satbar::-webkit-scrollbar{display:none}.satbar.on{display:flex}
+.satbar{position:absolute;z-index:1000;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 58px);display:none;flex-direction:column;gap:6px}
+.satbar.on{display:flex}
+.satrow{display:flex;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.satrow::-webkit-scrollbar{display:none}
+.satlbl{flex:none;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);width:52px}
+.sathint{font-size:11px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);background:rgba(14,27,42,.45);border-radius:10px;padding:5px 10px}
 .chip{flex:none;background:var(--card);border-radius:999px;padding:7px 12px;font-weight:700;font-size:13px;box-shadow:var(--shadow)}
-.chip.on{background:var(--fg);color:var(--bg)}
+.chip.on{background:var(--fg);color:var(--bg)}.chip.off{opacity:.4;text-decoration:line-through}
 
 /* area verdict (floating, top of sheet) */
 .area{position:absolute;z-index:1000;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 14px);background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:12px 14px;display:flex;align-items:center;gap:12px}
@@ -245,6 +248,6 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
-<script src="app.js?v=11"></script>
+<script src="app.js?v=13"></script>
 </body>
 </html>
