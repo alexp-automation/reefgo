@@ -235,7 +235,8 @@ async function fetchCells(cells) {
 }
 function paintCells(cells) {
   const kday = S.days[S.day];
-  cells.forEach(c => { const fc = S.cells[c.key]; let cls = null; if (fc) { const st = dayStats(fc, kday); if (st) cls = overall(verdicts(st)); }
+  cells.forEach(c => { const fc = S.cells[c.key]; if (!fc) return; // still loading: keep the color from the coarser cell
+    let cls = null; const st = dayStats(fc, kday); if (st) cls = overall(verdicts(st));
     c.rs.forEach(r => { if (r.c !== cls) { r.c = cls; r.m.setIcon(mkIcon(cls, r === S.reef)); } }); });
   cluster.refreshClusters();
 }
