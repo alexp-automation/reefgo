@@ -13,7 +13,7 @@ const VESSELS = { pwc: ['Jet ski', 12, 16, 2.5, 3], kayak: ['Kayak / SUP', 8, 12
 const CITIES = [['Tampa, FL', 27.95, -82.46], ['Tarpon Springs, FL', 28.15, -82.76], ['Clearwater, FL', 27.97, -82.8], ['St. Petersburg, FL', 27.77, -82.64], ['Sarasota, FL', 27.34, -82.53], ['Fort Myers, FL', 26.64, -81.87], ['Naples, FL', 26.14, -81.79], ['Key West, FL', 24.56, -81.78], ['Miami, FL', 25.76, -80.19], ['Fort Lauderdale, FL', 26.12, -80.14], ['West Palm Beach, FL', 26.71, -80.05], ['Daytona Beach, FL', 29.21, -81.02], ['Jacksonville, FL', 30.33, -81.66], ['Pensacola, FL', 30.42, -87.22], ['Destin, FL', 30.39, -86.5], ['Panama City, FL', 30.16, -85.66], ['Crystal River, FL', 28.9, -82.59], ['Cedar Key, FL', 29.14, -83.03], ['Mobile, AL', 30.69, -88.04], ['Orange Beach, AL', 30.29, -87.57], ['Biloxi, MS', 30.4, -88.89], ['New Orleans, LA', 29.95, -90.07], ['Venice, LA', 29.28, -89.35], ['Galveston, TX', 29.3, -94.8], ['Freeport, TX', 28.95, -95.36], ['Corpus Christi, TX', 27.8, -97.4], ['Port Aransas, TX', 27.83, -97.06], ['South Padre Island, TX', 26.1, -97.17], ['Savannah, GA', 32.08, -81.1], ['Brunswick, GA', 31.15, -81.49], ['Charleston, SC', 32.78, -79.93], ['Myrtle Beach, SC', 33.69, -78.89], ['Wilmington, NC', 34.23, -77.94], ['Morehead City, NC', 34.72, -76.73], ['Nags Head, NC', 35.96, -75.63], ['Virginia Beach, VA', 36.85, -75.98], ['Ocean City, MD', 38.34, -75.08], ['Cape May, NJ', 38.94, -74.91], ['Atlantic City, NJ', 39.36, -74.42], ['New York, NY', 40.71, -74.01], ['Montauk, NY', 41.04, -71.95], ['Boston, MA', 42.36, -71.06], ['San Diego, CA', 32.72, -117.16], ['Los Angeles, CA', 33.94, -118.4], ['San Francisco, CA', 37.77, -122.42], ['Seattle, WA', 47.6, -122.33], ['Honolulu, HI', 21.31, -157.86]];
 const STATES = { FL: 'Florida', AL: 'Alabama', MS: 'Mississippi', LA: 'Louisiana', TX: 'Texas', GA: 'Georgia', SC: 'South Carolina', NC: 'North Carolina', VA: 'Virginia', MD: 'Maryland', DE: 'Delaware', NJ: 'New Jersey', NY: 'New York', CA: 'California', OR: 'Oregon', WA: 'Washington', HI: 'Hawaii' };
 
-const S = { reefs: [], tides: [], buoys: [], fish: null, cells: {}, cellPending: {}, buoysAt: null, reef: null, day: 0, days: [], fc: {}, cwf: {}, zone: {}, tideCache: {}, area: null, areaKey: '', vessel: 'pwc', sat: { on: false, date: null, layer: GIBS[0][1] } };
+const S = { reefs: [], tides: [], buoys: [], fish: null, kd: null, cells: {}, cellPending: {}, buoysAt: null, reef: null, day: 0, days: [], fc: {}, cwf: {}, zone: {}, tideCache: {}, area: null, areaKey: '', vessel: 'pwc', sat: { on: false, date: null, layer: GIBS[0][1] } };
 try { S.vessel = localStorage.getItem('rg.vessel') || 'pwc'; } catch (e) {}
 const $ = id => document.getElementById(id);
 const f1 = x => x == null ? '—' : String(Math.round(x * 10) / 10);
@@ -85,6 +85,33 @@ async function tidesFor(st) {
   try { const j = await getJSON(`https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=${st.id}&product=predictions&datum=MLLW&interval=hilo&units=english&time_zone=lst_ldt&format=json&begin_date=${todayKey().replace(/-/g, '')}&range=192`); return S.tideCache[st.id] = j.predictions || []; } catch (e) { return []; }
 }
 
+// ---------- satellite water clarity ----------
+// Kd490 (NOAA CoastWatch VIIRS, via kd.json from the GitHub Action) → Kd(PAR) (Morel 2007) → Secchi depth 1.7/Kd(PAR) (Poole–Atkins)
+// → horizontal diver visibility = 0.7 × Secchi (Alexey's 30% rule), shown as a ±15% range. To be calibrated against real dives.
+function clarity(r) {
+  const k = S.kd && S.kd.v && S.kd.v[r.id]; if (!k) return null; const kd = k[0]; if (!(kd > 0)) return null;
+  const kpar = Math.max(0.03, 0.0864 + 0.884 * kd - 0.00137 / kd); const vis = 0.7 * 1.7 / kpar;
+  const ft = vis * M2FT; const lo = Math.max(1, Math.floor(ft * 0.85)), hi = Math.min(100, Math.ceil(ft * 1.15));
+  const age = Math.round((new Date(todayKey() + 'T12:00:00Z') - new Date(k[1] + 'T12:00:00Z')) / 864e5);
+  const sat = { N21: 'NOAA-21 VIIRS', N20: 'NOAA-20 VIIRS', NPP: 'S-NPP VIIRS 4 km' }[k[2]] || 'VIIRS';
+  return { kd, date: k[1], age, sat, visM: vis, lo, hi, loM: lo / M2FT, hiM: hi / M2FT };
+}
+function windSince(fc, dateKey) { let mx = 0; const from = dateKey + 'T23:59'; fc.g.time.forEach((t, i) => { if (t > from && t <= todayKey() + 'T23:59') mx = Math.max(mx, fc.g.wind_speed_10m[i] ?? 0, fc.e.wind_speed_10m[i] ?? 0); }); return mx; }
+function clarityHTML(r, fc) {
+  if (!S.kd) return ''; const c = clarity(r);
+  if (!c) return `<div class="card"><h3>Water clarity · satellite</h3><p style="margin:0;font-size:14px" class="muted">No cloud-free satellite pass over this reef in the last 10 days.</p></div>`;
+  const ws = windSince(fc, c.date); const notes = [];
+  notes.push(ws > 15 ? `Wind up to ${f0(ws)} kt since the pass: expect worse than this.` : ws > 10 ? `Wind up to ${f0(ws)} kt since the pass: may be a bit worse.` : 'No strong wind since the pass.');
+  if (r.depth && r.depth < 15) notes.push('Shallow bright bottom can make the satellite read murkier than it is.');
+  if (r.depth && r.depth > 40) notes.push('Surface-layer reading. Deeper water can differ.');
+  const when = `${MON[+c.date.slice(5, 7) - 1]} ${+c.date.slice(8)}`;
+  return `<div class="card clar"><h3>Water clarity · satellite</h3>
+    <div class="big"><b>${c.lo}–${c.hi} ft</b><span>${c.hiM < 3 ? f1(c.loM) + '–' + f1(c.hiM) : f0(c.loM) + '–' + f0(c.hiM)} m · estimated visibility</span></div>
+    <div class="kv"><span>Satellite pass</span><b>${when} · ${c.age === 0 ? 'today' : c.age === 1 ? 'yesterday' : c.age + ' days ago'}</b><span>Sensor</span><b>${c.sat}</b><span>Light attenuation Kd490</span><b>${c.kd.toFixed(2)} /m</b></div>
+    <ul class="why" style="margin-top:8px">${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
+    <p class="muted" style="margin:8px 0 0;font-size:12px">Estimate from satellite light attenuation, cut by 30% for horizontal visibility. Not a measurement: valid for the moment of the pass, surface layer, clouds hide the water. Being calibrated against real dives.</p></div>`;
+}
+
 // ---------- verdict ----------
 function dayStats(fc, key) {
   const idx = []; fc.g.time.forEach((t, i) => { const h = +t.slice(11, 13); if (t.startsWith(key) && h >= 7 && h <= 15) idx.push(i); });
@@ -101,7 +128,7 @@ function dayStats(fc, key) {
   return { windAvg: avg(w), windMax: Math.max(...w), gust: Math.max(...gu), dir: g.wind_direction_10m[mid], wave: wv.length ? Math.max(...wv) : null, period: pe.length ? Math.min(...pe) : null,
     sst: sst.length ? sst[0] : null, tmax: Math.max(...idx.map(i => g.temperature_2m[i])), rain: Math.max(...idx.map(i => g.precipitation_probability[i] ?? 0)), since, gAvg: avg(idx.map(i => g.wind_speed_10m[i] ?? 0)), eAvg: avg(idx.map(i => e.wind_speed_10m[i] ?? 0)) };
 }
-function verdicts(s) {
+function verdicts(s, cl) {
   const V = VESSELS[S.vessel]; let ride = 0, dive = 0; const why = [];
   const wf = s.wave != null ? s.wave * M2FT : 0, p = s.period ?? 9;
   if (s.windAvg > V[2]) { ride = 2; why.push(`Wind ${f0(s.windAvg)} kt is too much for a ${V[0].toLowerCase()}`); } else if (s.windAvg > V[1]) { ride = 1; why.push(`Wind ${f0(s.windAvg)} kt: on the edge`); }
@@ -109,6 +136,7 @@ function verdicts(s) {
   if (s.windAvg > 15) dive = 2; else if (s.windAvg > 10) dive = 1;
   if (wf > 2.5) dive = 2; else if (wf > 2) { dive = Math.max(dive, 1); why.push('Seas over 2 ft hide the boat from a diver at the surface'); } else if (wf > 1.5 && p <= 4) { dive = Math.max(dive, 1); why.push('Short chop: hard to see the boat from the water'); }
   if (s.since < 2) { dive = Math.max(dive, 1); why.push(s.since < 1 ? 'Water is stirred up: strong wind less than a day ago' : `Water still clearing: strong wind ${f1(s.since)} days ago`); }
+  if (cl && cl.hi < 10) { dive = Math.max(dive, 1); why.push(`Satellite saw murky water (about ${cl.lo}–${cl.hi} ft) ${cl.age <= 1 ? 'yesterday' : cl.age + ' days ago'}`); }
   if (s.windAvg < 8) why.push('Calm morning. Expect a sea breeze of 8–10 kt after 3 pm; be on the reef early');
   if (Math.abs(s.gAvg - s.eAvg) > 5) why.push(`Models disagree (GFS ${f0(s.gAvg)}, ECMWF ${f0(s.eAvg)} kt); the worse one is used`);
   return { ride, dive, why };
@@ -246,7 +274,7 @@ q.oninput = () => { const t = q.value.trim().toLowerCase(); sug.innerHTML = ''; 
 q.onblur = () => setTimeout(() => sug.classList.remove('on'), 200);
 
 // ---------- reef sheet ----------
-function weekHTML(fc) { return `<div class="week">` + S.days.map((k, i) => { const s = dayStats(fc, k); const c = s ? overall(verdicts(s)) : null; return `<button class="${i === S.day ? 'sel' : ''}" data-day="${i}">${i === 0 ? 'Now' : DOW[dowOf(k)]}<em>${+k.slice(8)}</em><i class="${c == null ? '' : 'c' + c}"></i></button>`; }).join('') + '</div>'; }
+function weekHTML(fc, cl) { return `<div class="week">` + S.days.map((k, i) => { const s = dayStats(fc, k); const c = s ? overall(verdicts(s, i <= 1 ? cl : null)) : null; return `<button class="${i === S.day ? 'sel' : ''}" data-day="${i}">${i === 0 ? 'Now' : DOW[dowOf(k)]}<em>${+k.slice(8)}</em><i class="${c == null ? '' : 'c' + c}"></i></button>`; }).join('') + '</div>'; }
 async function openReef(r) {
   if (S.reef && S.reef.m) S.reef.m.setIcon(mkIcon(reefClass(S.reef), false)); S.reef = r; r.m.setIcon(mkIcon(reefClass(r), true));
   const sh = $('sheet'), el = $('sheetIn'); sh.classList.add('on'); $('area').hidden = true;
@@ -261,7 +289,7 @@ async function openReef(r) {
 function renderReef(r, fc, zone, cwf, tst, td) {
   const key = S.days[S.day]; const s = dayStats(fc, key); const el = $('sheetIn');
   if (!s) { el.innerHTML = `<div class="hero"><h1>${esc(r.name)}</h1><p class="lead">No forecast for this day.</p><button class="x" id="xBtn">×</button></div>`; $('xBtn').onclick = closeReef; return; }
-  const v = verdicts(s); const hc = overall(v); const z = zoneBlock(cwf, zone ? zone.id : ''); const dn = DOW_EN[dowOf(key)];
+  const cl = clarity(r); const v = verdicts(s, S.day <= 1 ? cl : null); const hc = overall(v); const z = zoneBlock(cwf, zone ? zone.id : ''); const dn = DOW_EN[dowOf(key)];
   const per = z ? z.periods.filter(p => S.day === 0 ? /TODAY|THIS AFTERNOON|TONIGHT/.test(p.name) : p.name === dn || p.name === dn + ' NIGHT') : [];
   const tides = td.filter(p => p.t.startsWith(key)).map(p => { const [hh, mm] = p.t.slice(11, 16).split(':').map(Number); const w = x => `${String(((hh + x) + 24) % 24).padStart(2, '0')}:${String(mm).padStart(2, '0')}`; return { h: p.t.slice(11, 16), type: p.type === 'H' ? 'High' : 'Low', slack: `${w(-1)}–${w(1)}` }; });
   const g = fc.g, e = fc.e, m = fc.m; const mi = {}; m.time.forEach((t, i) => mi[t] = i); let rows = '';
@@ -272,9 +300,10 @@ function renderReef(r, fc, zone, cwf, tst, td) {
       <div class="two"><div><b>Go</b><span class="t${v.ride}">${RIDE_TXT[v.ride]}</span></div><div><b>Dive</b><span class="t${v.dive}">${DIVE_TXT[v.dive]}</span></div></div>
       <div class="facts"><div><b>${f0(s.windAvg)} kt</b><small>wind ${dirTxt(s.dir)}</small></div><div><b>${f0(s.gust)} kt</b><small>gusts</small></div><div><b>${f1((s.wave || 0) * M2FT)} ft</b><small>seas · ${f0(s.period)} s</small></div><div><b>${f0(F(s.sst))}°</b><small>water °F</small></div></div>
       <button class="x" id="xBtn" aria-label="Close">×</button></div>
-    ${weekHTML(fc)}
+    ${weekHTML(fc, cl)}
     <div class="card"><h3>${esc(r.name || r.id)}</h3><p style="margin:0;font-size:14px">${esc(r.desc || '')}${meta ? `<br><span class="muted">${esc(meta)}</span>` : ''}</p></div>
     ${buoyHTML(r.lat, r.lon)}
+    ${clarityHTML(r, fc)}
     ${fishHTML(r, key)}
     ${v.why.length ? `<div class="card"><h3>Why</h3><ul class="why">${v.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
     ${tides.length ? `<div class="card"><h3>Tide · ${esc(tst.n)}</h3><div class="kv">${tides.map(t => `<span>${t.type} ${t.h}</span><b>slack ${t.slack}</b>`).join('')}</div><p class="muted" style="margin:6px 0 0;font-size:12px">Slack water is the easy window to launch and retrieve.</p></div>` : ''}
@@ -324,8 +353,8 @@ let onbDue = false; try { onbDue = !localStorage.getItem('rg.onb'); } catch (e) 
 
 (async () => {
   const t = todayKey(); S.days = Array.from({ length: 7 }, (_, i) => addDays(t, i));
-  const [reefs, tides, nd, fish] = await Promise.all([getJSON('reefs.json'), getJSON('tides.json').catch(() => []), getJSON('ndbc.json?' + Date.now()).catch(() => null), getJSON('data/fish.json').catch(() => null)]);
-  S.fish = fish;
+  const [reefs, tides, nd, fish, kd] = await Promise.all([getJSON('reefs.json'), getJSON('tides.json').catch(() => []), getJSON('ndbc.json?' + Date.now()).catch(() => null), getJSON('data/fish.json').catch(() => null), getJSON('kd.json?' + Date.now()).catch(() => null)]);
+  S.fish = fish; S.kd = kd;
   S.tides = tides; S.buoys = nd ? nd.stations : []; loadReefs(reefs); if (onbDue) showOnb(); else { updateArea(); colorReefs(); }
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 })();

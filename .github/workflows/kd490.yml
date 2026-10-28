@@ -1,0 +1,22 @@
+name: Update satellite water clarity (Kd490)
+on:
+  schedule:
+    - cron: '20 2,8,14,20 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  kd490:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch Kd490 for all reefs
+        run: python3 scripts/kd490.py kd.json
+      - name: Commit if changed
+        run: |
+          git config user.name "reefgo-bot"
+          git config user.email "reefgo-bot@users.noreply.github.com"
+          git pull --rebase
+          git add kd.json
+          git diff --cached --quiet || git commit -m "kd490: $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push
