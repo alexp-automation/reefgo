@@ -48,7 +48,8 @@ input{font:inherit}
 .search svg{width:16px;height:16px;flex:none;color:var(--muted)}
 .iconbtn{width:40px;height:40px;border-radius:50%;background:var(--card);box-shadow:var(--shadow);display:grid;place-items:center;color:var(--fg);flex:none}
 .iconbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.iconbtn.on{background:var(--fg);color:var(--bg)}
+.iconbtn.on{background:var(--fg);color:var(--bg)}.iconbtn.busy{opacity:.5}
+.me{width:20px;height:20px;border-radius:50%;background:#1a73e8;border:3px solid #fff;box-shadow:0 0 0 2px rgba(26,115,232,.35),0 2px 6px rgba(0,0,0,.35)}
 .sug{position:absolute;z-index:1001;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 58px);background:var(--card);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;display:none}
 .sug.on{display:block}
 .sug button{display:block;width:100%;text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);font-size:14px}
@@ -248,6 +249,6 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 </body>
 </html>

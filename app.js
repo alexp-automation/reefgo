@@ -292,7 +292,16 @@ $('satBtn').onclick = () => toggleSat();
 S.sat.date = addDays(todayKey(), -1); buildSat();
 
 // location + search
-$('locBtn').onclick = () => { if (!navigator.geolocation) return; navigator.geolocation.getCurrentPosition(p => map.setView([p.coords.latitude, p.coords.longitude], 10), () => {}); };
+// "You are here": blue dot with an accuracy circle, kept on the map and refreshed on every tap
+let meDot = null, meRing = null;
+function showMe(p, zoomTo) { const ll = [p.coords.latitude, p.coords.longitude];
+  if (!meDot) { meRing = L.circle(ll, { radius: p.coords.accuracy || 50, color: '#1a73e8', weight: 1, opacity: .5, fillColor: '#1a73e8', fillOpacity: .12, interactive: false }).addTo(map);
+    meDot = L.marker(ll, { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [20, 20], iconAnchor: [10, 10] }), interactive: false, zIndexOffset: 1000 }).addTo(map); }
+  else { meRing.setLatLng(ll).setRadius(p.coords.accuracy || 50); meDot.setLatLng(ll); }
+  if (zoomTo) map.setView(ll, Math.max(map.getZoom(), 10)); }
+function locate(zoomTo) { if (!navigator.geolocation) return; $('locBtn').classList.add('busy');
+  navigator.geolocation.getCurrentPosition(p => { $('locBtn').classList.remove('busy'); $('locBtn').classList.add('on'); showMe(p, zoomTo); }, () => { $('locBtn').classList.remove('busy'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }); }
+$('locBtn').onclick = () => locate(true);
 const q = $('q'), sug = $('sug');
 q.oninput = () => { const t = q.value.trim().toLowerCase(); sug.innerHTML = ''; if (t.length < 2) { sug.classList.remove('on'); return; }
   const res = [];
@@ -378,7 +387,7 @@ function showOnb() { buildOnbVessel(); onbStep(0); $('onb').classList.add('on');
 function endOnb() { $('onb').classList.remove('on'); try { localStorage.setItem('rg.onb', '1'); } catch (e) {} S.area = null; S.areaKey = ''; updateArea(); colorReefs(); }
 document.querySelectorAll('#onb [data-next]').forEach(b => b.onclick = () => onbStep(+b.dataset.next));
 $('onbLoc').onclick = () => { if (!navigator.geolocation) { onbStep(2); return; } $('onbLoc').textContent = 'Finding you…';
-  navigator.geolocation.getCurrentPosition(p => { map.setView([p.coords.latitude, p.coords.longitude], 10); onbStep(2); }, () => { $('onbLoc').textContent = 'Location unavailable. Continue'; $('onbLoc').onclick = () => onbStep(2); }, { timeout: 8000 }); };
+  navigator.geolocation.getCurrentPosition(p => { showMe(p, true); $('locBtn').classList.add('on'); onbStep(2); }, () => { $('onbLoc').textContent = 'Location unavailable. Continue'; $('onbLoc').onclick = () => onbStep(2); }, { timeout: 8000 }); };
 $('onbDone').onclick = endOnb;
 $('setIntro').onclick = () => { $('settings').classList.remove('on'); showOnb(); };
 let onbDue = false; try { onbDue = !localStorage.getItem('rg.onb'); } catch (e) {}
