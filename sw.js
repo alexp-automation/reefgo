@@ -1,5 +1,5 @@
 // кэш оболочки приложения, данные всегда с сети
-const C = 'reefgo-v8';
+const C = 'reefgo-v9';
 const SHELL = ['./', './index.html', './app.js', './reefs.json', './tides.json', './data/fish.json', './manifest.webmanifest', './icon.svg', './img/icon-192.png'];
 self.addEventListener('install', e => e.waitUntil(caches.open(C).then(c => c.addAll(SHELL))));
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== C).map(k => caches.delete(k))))));
