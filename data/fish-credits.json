@@ -172,5 +172,125 @@
   "page": "https://commons.wikimedia.org/wiki/File:Pomatomus_saltatrix.png",
   "license": "Public domain",
   "artist": "Unknown authorUnknown author"
+ },
+ "kelpbass": {
+  "file": "Paralabrax_clathratus.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Paralabrax_clathratus.jpg",
+  "license": "Public domain",
+  "artist": "Steve Lonhart/MBNMS"
+ },
+ "sandbass": {
+  "file": "P_nebulifer.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:P_nebulifer.jpg",
+  "license": "CC BY-SA 4.0",
+  "artist": "NickW557"
+ },
+ "sheephead": {
+  "file": "Sheephead.JPG",
+  "page": "https://commons.wikimedia.org/wiki/File:Sheephead.JPG",
+  "license": "CC BY-SA 2.5",
+  "artist": ""
+ },
+ "cahalibut": {
+  "file": "Halibut_300.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Halibut_300.jpg",
+  "license": "Public domain",
+  "artist": ""
+ },
+ "whiteseabass": {
+  "file": "Atractoscion_nobilis_mspc096.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Atractoscion_nobilis_mspc096.jpg",
+  "license": "Public domain",
+  "artist": ""
+ },
+ "cayellowtail": {
+  "file": "Yellowtail_amberjack.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Yellowtail_amberjack.jpg",
+  "license": "CC BY 2.0",
+  "artist": "brian gratwicke"
+ },
+ "whitefish": {
+  "file": "Caulolatilus_princeps.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Caulolatilus_princeps.jpg",
+  "license": "Public domain",
+  "artist": "Smith, Elder &amp; Co"
+ },
+ "lingcod": {
+  "file": "Ophiodon_elongatus.png",
+  "page": "https://commons.wikimedia.org/wiki/File:Ophiodon_elongatus.png",
+  "license": "Public domain",
+  "artist": "Unknown authorUnknown author"
+ },
+ "cabezon": {
+  "file": "Scorpaenichthys_marmoratus.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Scorpaenichthys_marmoratus.jpg",
+  "license": "Public domain",
+  "artist": "Steve Lonhart (SIMoN / MBNMS)"
+ },
+ "vermrockfish": {
+  "file": "Sebastes_miniatus_8.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Sebastes_miniatus_8.jpg",
+  "license": "Public domain",
+  "artist": "Steve Lonhart / NOAA MBNMS"
+ },
+ "blackrockfish": {
+  "file": "Sebastes_melanops_VA_02.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Sebastes_melanops_VA_02.jpg",
+  "license": "CC BY-SA 4.0",
+  "artist": "Bloopityboop"
+ },
+ "copperrockfish": {
+  "file": "Sebastes_caurinus_1.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Sebastes_caurinus_1.jpg",
+  "license": "Public domain",
+  "artist": "Chad King (SIMoN / MBNMS)"
+ },
+ "greenling": {
+  "file": "Hexagrammos_decagrammus_(male).jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Hexagrammos_decagrammus_(male).jpg",
+  "license": "Public domain",
+  "artist": "Steve Lonhart (SIMoN / MBNMS)"
+ },
+ "uku": {
+  "file": "Aprion_virescens_JNC2568.JPG",
+  "page": "https://commons.wikimedia.org/wiki/File:Aprion_virescens_JNC2568.JPG",
+  "license": "CC BY-SA 4.0",
+  "artist": "Jean-Lou Justine"
+ },
+ "omilu": {
+  "file": "Jurel_de_aleta_azul_(Caranx_melampygus),_Yeda,_Arabia_Saudita,_2025-05-23,_DD_22.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Jurel_de_aleta_azul_(Caranx_melampygus),_Yeda,_Arabia_Saudita,_2025-05-23,_DD_22.jpg",
+  "license": "CC BY-SA 4.0",
+  "artist": "Diego Delso"
+ },
+ "ulua": {
+  "file": "Caranx_ignobilis.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Caranx_ignobilis.jpg",
+  "license": "Public domain",
+  "artist": "Dr. Dwayne Meadows, NOAA/NMFS/OPR"
+ },
+ "mu": {
+  "file": "Emperador_jorobado_(Monotaxis_grandoculis),_parque_nacional_Ras_Muhammad,_Egipto,_2022-03-26,_DD_125.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Emperador_jorobado_(Monotaxis_grandoculis),_parque_nacional_Ras_Muhammad,_Egipto,_2022-03-26,_DD_125.jpg",
+  "license": "CC BY-SA 4.0",
+  "artist": "Diego Delso"
+ },
+ "kole": {
+  "file": "Butterfly_Pavilion_8-23_(20915221696)_(cropped).jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Butterfly_Pavilion_8-23_(20915221696)_(cropped).jpg",
+  "license": "CC BY-SA 2.0",
+  "artist": "KimonBerlin"
+ },
+ "menpachi": {
+  "file": "Myripristis_berndti.JPG",
+  "page": "https://commons.wikimedia.org/wiki/File:Myripristis_berndti.JPG",
+  "license": "CC BY-SA 2.5",
+  "artist": ""
+ },
+ "roi": {
+  "file": "Blue-spotted.grouper.arp.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Blue-spotted.grouper.arp.jpg",
+  "license": "Public domain",
+  "artist": "Adrian Pingstone"
  }
 }

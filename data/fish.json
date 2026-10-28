@@ -56,6 +56,22 @@
   "NY": {
    "name": "New York",
    "url": "https://dec.ny.gov/things-to-do/saltwater-fishing/recreational-fishing-regulations"
+  },
+  "CA": {
+   "name": "California",
+   "url": "https://wildlife.ca.gov/Fishing/Ocean/Regulations"
+  },
+  "OR": {
+   "name": "Oregon",
+   "url": "https://myodfw.com/fishing"
+  },
+  "WA": {
+   "name": "Washington",
+   "url": "https://wdfw.wa.gov/fishing/regulations"
+  },
+  "HI": {
+   "name": "Hawaii",
+   "url": "https://dlnr.hawaii.gov/dar/fishing/fishing-regulations/"
   }
  },
  "groups": {
@@ -78,6 +94,16 @@
    "DE",
    "NJ",
    "NY"
+  ],
+  "pac": [
+   "CA"
+  ],
+  "pnw": [
+   "OR",
+   "WA"
+  ],
+  "hi": [
+   "HI"
   ]
  },
  "species": [
@@ -780,6 +806,260 @@
    "minDepth": 0,
    "rules": {},
    "img": "img/fish/bluefish.jpg"
+  },
+  {
+   "id": "kelpbass",
+   "name": "Kelp bass (calico)",
+   "sci": "Paralabrax clathratus",
+   "wiki": "Paralabrax clathratus",
+   "groups": [
+    "pac"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/kelpbass.jpg"
+  },
+  {
+   "id": "sandbass",
+   "name": "Barred sand bass",
+   "sci": "Paralabrax nebulifer",
+   "wiki": "Barred sand bass",
+   "groups": [
+    "pac"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/sandbass.jpg"
+  },
+  {
+   "id": "sheephead",
+   "name": "California sheephead",
+   "sci": "Semicossyphus pulcher",
+   "wiki": "California sheephead",
+   "groups": [
+    "pac"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/sheephead.jpg"
+  },
+  {
+   "id": "cahalibut",
+   "name": "California halibut",
+   "sci": "Paralichthys californicus",
+   "wiki": "California halibut",
+   "groups": [
+    "pac"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/cahalibut.jpg"
+  },
+  {
+   "id": "whiteseabass",
+   "name": "White seabass",
+   "sci": "Atractoscion nobilis",
+   "wiki": "White seabass",
+   "groups": [
+    "pac"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/whiteseabass.jpg"
+  },
+  {
+   "id": "cayellowtail",
+   "name": "Yellowtail",
+   "sci": "Seriola dorsalis",
+   "wiki": "Yellowtail amberjack",
+   "groups": [
+    "pac"
+   ],
+   "minDepth": 25,
+   "rules": {},
+   "img": "img/fish/cayellowtail.jpg"
+  },
+  {
+   "id": "whitefish",
+   "name": "Ocean whitefish",
+   "sci": "Caulolatilus princeps",
+   "wiki": "Ocean whitefish",
+   "groups": [
+    "pac"
+   ],
+   "minDepth": 40,
+   "rules": {},
+   "img": "img/fish/whitefish.jpg"
+  },
+  {
+   "id": "lingcod",
+   "name": "Lingcod",
+   "sci": "Ophiodon elongatus",
+   "wiki": "Lingcod",
+   "groups": [
+    "pac",
+    "pnw"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/lingcod.jpg"
+  },
+  {
+   "id": "cabezon",
+   "name": "Cabezon",
+   "sci": "Scorpaenichthys marmoratus",
+   "wiki": "Cabezon (fish)",
+   "groups": [
+    "pac",
+    "pnw"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/cabezon.jpg"
+  },
+  {
+   "id": "vermrockfish",
+   "name": "Vermilion rockfish",
+   "sci": "Sebastes miniatus",
+   "wiki": "Sebastes miniatus",
+   "groups": [
+    "pac"
+   ],
+   "minDepth": 40,
+   "rules": {},
+   "img": "img/fish/vermrockfish.jpg"
+  },
+  {
+   "id": "blackrockfish",
+   "name": "Black rockfish",
+   "sci": "Sebastes melanops",
+   "wiki": "Black rockfish",
+   "groups": [
+    "pac",
+    "pnw"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/blackrockfish.jpg"
+  },
+  {
+   "id": "copperrockfish",
+   "name": "Copper rockfish",
+   "sci": "Sebastes caurinus",
+   "wiki": "Copper rockfish",
+   "groups": [
+    "pnw"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/copperrockfish.jpg"
+  },
+  {
+   "id": "greenling",
+   "name": "Kelp greenling",
+   "sci": "Hexagrammos decagrammus",
+   "wiki": "Kelp greenling",
+   "groups": [
+    "pnw"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/greenling.jpg"
+  },
+  {
+   "id": "uku",
+   "name": "Uku (green jobfish)",
+   "sci": "Aprion virescens",
+   "wiki": "Green jobfish",
+   "groups": [
+    "hi"
+   ],
+   "minDepth": 40,
+   "rules": {},
+   "img": "img/fish/uku.jpg"
+  },
+  {
+   "id": "omilu",
+   "name": "Omilu (bluefin trevally)",
+   "sci": "Caranx melampygus",
+   "wiki": "Bluefin trevally",
+   "groups": [
+    "hi"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/omilu.jpg"
+  },
+  {
+   "id": "ulua",
+   "name": "Ulua (giant trevally)",
+   "sci": "Caranx ignobilis",
+   "wiki": "Giant trevally",
+   "groups": [
+    "hi"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/ulua.jpg"
+  },
+  {
+   "id": "mu",
+   "name": "Mu (bigeye emperor)",
+   "sci": "Monotaxis grandoculis",
+   "wiki": "Monotaxis grandoculis",
+   "groups": [
+    "hi"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/mu.jpg"
+  },
+  {
+   "id": "kole",
+   "name": "Kole (goldring surgeonfish)",
+   "sci": "Ctenochaetus strigosus",
+   "wiki": "Ctenochaetus strigosus",
+   "groups": [
+    "hi"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/kole.jpg"
+  },
+  {
+   "id": "menpachi",
+   "name": "Menpachi (soldierfish)",
+   "sci": "Myripristis berndti",
+   "wiki": "Blotcheye soldierfish",
+   "groups": [
+    "hi"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/menpachi.jpg"
+  },
+  {
+   "id": "roi",
+   "name": "Roi (peacock grouper, invasive)",
+   "sci": "Cephalopholis argus",
+   "wiki": "Cephalopholis argus",
+   "groups": [
+    "hi"
+   ],
+   "minDepth": 0,
+   "rules": {},
+   "img": "img/fish/roi.jpg"
+  },
+  {
+   "id": "taape",
+   "name": "Ta'ape (bluestripe snapper, invasive)",
+   "sci": "Lutjanus kasmira",
+   "wiki": "Bluestripe snapper",
+   "groups": [
+    "hi"
+   ],
+   "minDepth": 0,
+   "rules": {}
   }
  ],
  "flNoSpear": "Florida: never spear billfish, rays, sharks, sturgeon, bonefish, tarpon, goliath or Nassau grouper, snook, spotted seatrout, red drum, weakfish, pompano, permit, tripletail, crabs, lobster, or ornamental reef fish (angelfish, parrotfish, puffers, surgeonfish and the like). Keep 100 yd from public beaches, piers and bridges. Reef fish from a private boat need the free State Reef Fish Angler designation.",

@@ -11,7 +11,7 @@ const GIBS = [['NOAA-20', 'VIIRS_NOAA20_CorrectedReflectance_TrueColor'], ['NOAA
 // vessel profiles: [ride wind caution, ride wind no, ride wave caution ft, ride wave no ft]
 const VESSELS = { pwc: ['Jet ski', 12, 16, 2.5, 3], kayak: ['Kayak / SUP', 8, 12, 1.5, 2.5], small: ['Boat under 20 ft', 12, 18, 3, 4], mid: ['Boat 20–26 ft', 15, 20, 3.5, 5], big: ['Boat over 26 ft', 18, 25, 4.5, 6] };
 const CITIES = [['Tampa, FL', 27.95, -82.46], ['Tarpon Springs, FL', 28.15, -82.76], ['Clearwater, FL', 27.97, -82.8], ['St. Petersburg, FL', 27.77, -82.64], ['Sarasota, FL', 27.34, -82.53], ['Fort Myers, FL', 26.64, -81.87], ['Naples, FL', 26.14, -81.79], ['Key West, FL', 24.56, -81.78], ['Miami, FL', 25.76, -80.19], ['Fort Lauderdale, FL', 26.12, -80.14], ['West Palm Beach, FL', 26.71, -80.05], ['Daytona Beach, FL', 29.21, -81.02], ['Jacksonville, FL', 30.33, -81.66], ['Pensacola, FL', 30.42, -87.22], ['Destin, FL', 30.39, -86.5], ['Panama City, FL', 30.16, -85.66], ['Crystal River, FL', 28.9, -82.59], ['Cedar Key, FL', 29.14, -83.03], ['Mobile, AL', 30.69, -88.04], ['Orange Beach, AL', 30.29, -87.57], ['Biloxi, MS', 30.4, -88.89], ['New Orleans, LA', 29.95, -90.07], ['Venice, LA', 29.28, -89.35], ['Galveston, TX', 29.3, -94.8], ['Freeport, TX', 28.95, -95.36], ['Corpus Christi, TX', 27.8, -97.4], ['Port Aransas, TX', 27.83, -97.06], ['South Padre Island, TX', 26.1, -97.17], ['Savannah, GA', 32.08, -81.1], ['Brunswick, GA', 31.15, -81.49], ['Charleston, SC', 32.78, -79.93], ['Myrtle Beach, SC', 33.69, -78.89], ['Wilmington, NC', 34.23, -77.94], ['Morehead City, NC', 34.72, -76.73], ['Nags Head, NC', 35.96, -75.63], ['Virginia Beach, VA', 36.85, -75.98], ['Ocean City, MD', 38.34, -75.08], ['Cape May, NJ', 38.94, -74.91], ['Atlantic City, NJ', 39.36, -74.42], ['New York, NY', 40.71, -74.01], ['Montauk, NY', 41.04, -71.95], ['Boston, MA', 42.36, -71.06], ['San Diego, CA', 32.72, -117.16], ['Los Angeles, CA', 33.94, -118.4], ['San Francisco, CA', 37.77, -122.42], ['Seattle, WA', 47.6, -122.33], ['Honolulu, HI', 21.31, -157.86]];
-const STATES = { FL: 'Florida', AL: 'Alabama', MS: 'Mississippi', LA: 'Louisiana', TX: 'Texas', GA: 'Georgia', SC: 'South Carolina', NC: 'North Carolina', VA: 'Virginia', MD: 'Maryland', DE: 'Delaware', NJ: 'New Jersey', NY: 'New York', CA: 'California', WA: 'Washington', HI: 'Hawaii' };
+const STATES = { FL: 'Florida', AL: 'Alabama', MS: 'Mississippi', LA: 'Louisiana', TX: 'Texas', GA: 'Georgia', SC: 'South Carolina', NC: 'North Carolina', VA: 'Virginia', MD: 'Maryland', DE: 'Delaware', NJ: 'New Jersey', NY: 'New York', CA: 'California', OR: 'Oregon', WA: 'Washington', HI: 'Hawaii' };
 
 const S = { reefs: [], tides: [], buoys: [], fish: null, fishAll: {}, buoysAt: null, reef: null, day: 0, days: [], fc: {}, cwf: {}, zone: {}, tideCache: {}, area: null, areaKey: '', vessel: 'pwc', sat: { on: false, date: null, layer: GIBS[0][1] } };
 try { S.vessel = localStorage.getItem('rg.vessel') || 'pwc'; } catch (e) {}
@@ -24,6 +24,7 @@ const F = c => c == null ? null : c * 9 / 5 + 32;
 const todayKey = () => new Date().toLocaleDateString('en-CA');
 const addDays = (k, n) => { const d = new Date(k + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const dowOf = k => new Date(k + 'T12:00:00Z').getUTCDay();
+const dayLower = k => { const n = dayName(k); return /^(Today|Tomorrow)$/.test(n) ? n.toLowerCase() : n; };
 const dayName = k => { const i = S.days.indexOf(k); return i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : `${DOW[dowOf(k)]} ${MON[+k.slice(5, 7) - 1]} ${+k.slice(8)}`; };
 const nm = (a, b) => { const R = 3440.065, p = Math.PI / 180, dl = (b.lat - a.lat) * p, dn = (b.lon - a.lon) * p; const h = Math.sin(dl / 2) ** 2 + Math.cos(a.lat * p) * Math.cos(b.lat * p) * Math.sin(dn / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
 const overall = v => v.ride === 2 ? 2 : (v.ride === 0 && v.dive === 0 ? 0 : 1);
@@ -117,7 +118,7 @@ function clearDay(fc) { let last = null; fc.g.time.forEach((t, i) => { if (Math.
 function lead(s, v, z, fc) {
   let t = `${dirWord(s.dir)} wind ${f0(s.windAvg)} kt, seas ${f1((s.wave || 0) * M2FT)} ft every ${f0(s.period)} s.`;
   if (z && z.sca && S.day <= 1) t += ` ${z.sca.toLowerCase().replace(/(^|\s)(\w)/g, (a, b, c) => b + c.toUpperCase()).replace(/ (In|Effect|Through|Until|From|For|The|And|Of) /g, m => m.toLowerCase())}.`;
-  if (v.ride < 2 && v.dive > 0 && s.since < 2) { const cd = clearDay(fc); t += cd && !cd.clear ? ` Water should clear by ${dayName(cd.key).toLowerCase()}.` : ' Water is still murky.'; }
+  if (v.ride < 2 && v.dive > 0 && s.since < 2) { const cd = clearDay(fc); t += cd && !cd.clear ? ` Water should clear by ${dayLower(cd.key)}.` : ' Water is still murky.'; }
   return t;
 }
 
@@ -153,7 +154,7 @@ function fishHTML(r, key) {
   if (!S.fish) return ''; const f = fishList(r, key); if (!f || !f.list.length) return '';
   const n = f.list.filter(x => x.st === 'open').length, c = f.list.filter(x => x.st === 'closed' || x.st === 'protected').length;
   const head = f.fl ? `${n} open ${dayName(key).toLowerCase()}, ${c} closed` : `${f.list.length} species · ${esc(f.name)} rules`;
-  const row = x => `<div class="fr"><img src="${x.sp.img || ''}" alt="" loading="lazy"><div class="ft"><b>${esc(x.sp.name)}</b><span>${x.rule ? esc([x.rule.size !== 'none' && x.rule.size !== '—' ? 'min ' + x.rule.size : null, 'bag ' + x.rule.bag].filter(Boolean).join(' · ')) : `<i>${esc(x.sp.sci)}</i>`}</span>${x.rule && x.rule.note ? `<small>${esc(x.rule.note)}${x.rule.verify ? ' · verify' : ''}</small>` : x.rule && x.rule.verify ? '<small>Verify on myfwc.com</small>' : ''}</div><em class="pill ${x.st}">${PILL[x.st]}</em></div>`;
+  const row = x => `<div class="fr">${x.sp.img ? `<img src="${x.sp.img}" alt="" loading="lazy">` : '<i class="noimg"></i>'}<div class="ft"><b>${esc(x.sp.name)}</b><span>${x.rule ? esc([x.rule.size !== 'none' && x.rule.size !== '—' ? 'min ' + x.rule.size : null, 'bag ' + x.rule.bag].filter(Boolean).join(' · ')) : `<i>${esc(x.sp.sci)}</i>`}</span>${x.rule && x.rule.note ? `<small>${esc(x.rule.note)}${x.rule.verify ? ' · verify' : ''}</small>` : x.rule && x.rule.verify ? '<small>Verify on myfwc.com</small>' : ''}</div><em class="pill ${x.st}">${PILL[x.st]}</em></div>`;
   const first = f.list.slice(0, 7), rest = f.list.slice(7);
   return `<div class="card fish"><h3>Fish here · ${head}</h3><div class="fl">${first.map(row).join('')}</div>${rest.length ? `<div class="fl more" hidden>${rest.map(row).join('')}</div><button class="link" data-more>Show ${rest.length} more</button>` : ''}
     <p class="muted" style="margin:8px 0 0;font-size:12px">${f.fl ? esc(S.fish.flNoSpear) + ' Snapshot of FWC rules; seasons change yearly. ' : `Size, bag and season limits are set by ${esc(f.name)}. `}<a href="${f.url}" target="_blank" rel="noopener">${f.fl ? 'FWC rules' : esc(f.name) + ' rules'}</a>. Species guessed from reef depth${r.depth ? ` (${f0(r.depth)} ft)` : ''}, not a survey.</p></div>`;
@@ -184,7 +185,8 @@ async function updateArea() {
   const c = map.getCenter(); const key = c.lat.toFixed(1) + ',' + c.lng.toFixed(1); if (key === S.areaKey && S.area) { $('area').hidden = false; return; }
   S.areaKey = key; $('area').hidden = false; $('areaH').textContent = 'Checking conditions…'; $('areaS').textContent = ''; $('areaDot').className = 'v';
   try { const fc = await forecastAt(c.lat, c.lng); if (key !== S.areaKey) return; const kday = S.days[S.day]; const s = dayStats(fc, kday); const v = verdicts(s); const cls = overall(v);
-    S.area = { c: cls, s, v }; $('areaDot').className = 'v c' + cls; $('areaLbl').textContent = `Conditions here · ${dayName(kday).toLowerCase()}`; $('areaH').textContent = headline(v);
+    S.area = { c: cls, s, v }; $('areaDot').className = 'v c' + cls; $('areaLbl').textContent = `Conditions here · ${dayLower(kday)}`; $('areaH').textContent = headline(v);
+    const nx = nextWindow(fc); $('areaN').hidden = !(nx && cls !== 0); if (nx && cls !== 0) $('areaN').textContent = `Next window: ${dayName(nx.key)} · ${headline(nx.v)}`; if (nx) maybeNotify(nx, c);
     $('areaS').textContent = `${dirTxt(s.dir)} ${f0(s.windAvg)} kt · seas ${f1((s.wave || 0) * M2FT)} ft / ${f0(s.period)} s · water ${f0(F(s.sst))}°F`; recolor(); }
   catch (e) { $('areaH').textContent = 'No forecast for this spot'; $('areaS').textContent = 'Move the map over coastal water'; }
 }
@@ -258,16 +260,41 @@ function closeReef() { $('sheet').classList.remove('on'); if (S.reef && S.reef.m
 $('grip').onclick = closeReef;
 map.on('click', () => { if ($('sheet').classList.contains('on')) closeReef(); });
 
+// ---------- next window + alerts ----------
+function nextWindow(fc) { for (let i = 1; i < S.days.length; i++) { const st = dayStats(fc, S.days[i]); if (!st) continue; const v = verdicts(st); if (overall(v) === 0) return { key: S.days[i], s: st, v }; } return null; }
+function notifyOn() { try { return localStorage.getItem('rg.notify') === '1'; } catch (e) { return false; } }
+function maybeNotify(nx, c) {
+  if (!notifyOn() || !('Notification' in window) || Notification.permission !== 'granted') return;
+  const tag = nx.key + '@' + c.lat.toFixed(1) + ',' + c.lng.toFixed(1); let last = null; try { last = localStorage.getItem('rg.notified'); } catch (e) {}
+  if (last === tag) return; try { localStorage.setItem('rg.notified', tag); } catch (e) {}
+  try { new Notification(`ReefGo: window opens ${dayName(nx.key)}`, { body: `${headline(nx.v)}. Wind ${f0(nx.s.windAvg)} kt, seas ${f1((nx.s.wave || 0) * M2FT)} ft.`, icon: 'icon.svg', tag }); } catch (e) {}
+}
+function buildNotify() { const cb = $('notifyOn'); const ok = 'Notification' in window; cb.disabled = !ok; cb.checked = ok && notifyOn() && Notification.permission === 'granted';
+  if (!ok) $('notifyHint').textContent = 'Notifications are not available in this browser. On iPhone, add ReefGo to the Home Screen first.';
+  cb.onchange = async () => { if (cb.checked) { const p = await Notification.requestPermission(); if (p !== 'granted') { cb.checked = false; return; } try { localStorage.setItem('rg.notify', '1'); } catch (e) {} S.areaKey = ''; updateArea(); } else { try { localStorage.setItem('rg.notify', '0'); } catch (e) {} } }; }
+
 // settings
 function buildVessel() { const el = $('vessel'); el.innerHTML = ''; Object.entries(VESSELS).forEach(([k, v]) => { const b = document.createElement('button'); b.textContent = v[0]; b.className = k === S.vessel ? 'on' : ''; b.onclick = () => { S.vessel = k; try { localStorage.setItem('rg.vessel', k); } catch (e) {} buildVessel(); S.area = null; S.areaKey = ''; updateArea(); }; el.appendChild(b); }); }
-$('setBtn').onclick = () => { buildVessel(); $('settings').classList.add('on'); };
+$('setBtn').onclick = () => { buildVessel(); buildNotify(); $('settings').classList.add('on'); };
 $('setClose').onclick = () => $('settings').classList.remove('on');
 $('settings').onclick = e => { if (e.target === $('settings')) $('settings').classList.remove('on'); };
+
+// ---------- onboarding ----------
+function buildOnbVessel() { const el = $('onbVessel'); el.innerHTML = ''; Object.entries(VESSELS).forEach(([k, v]) => { const b = document.createElement('button'); b.textContent = v[0]; b.className = k === S.vessel ? 'on' : ''; b.onclick = () => { S.vessel = k; try { localStorage.setItem('rg.vessel', k); } catch (e) {} buildOnbVessel(); }; el.appendChild(b); }); }
+function onbStep(n) { document.querySelectorAll('#onb .step').forEach(s => s.classList.toggle('on', +s.dataset.step === n)); $('onb').scrollTop = 0; }
+function showOnb() { buildOnbVessel(); onbStep(0); $('onb').classList.add('on'); }
+function endOnb() { $('onb').classList.remove('on'); try { localStorage.setItem('rg.onb', '1'); } catch (e) {} S.area = null; S.areaKey = ''; updateArea(); }
+document.querySelectorAll('#onb [data-next]').forEach(b => b.onclick = () => onbStep(+b.dataset.next));
+$('onbLoc').onclick = () => { if (!navigator.geolocation) { onbStep(2); return; } $('onbLoc').textContent = 'Finding you…';
+  navigator.geolocation.getCurrentPosition(p => { map.setView([p.coords.latitude, p.coords.longitude], 10); onbStep(2); }, () => { $('onbLoc').textContent = 'Location unavailable. Continue'; $('onbLoc').onclick = () => onbStep(2); }, { timeout: 8000 }); };
+$('onbDone').onclick = endOnb;
+$('setIntro').onclick = () => { $('settings').classList.remove('on'); showOnb(); };
+let onbDue = false; try { onbDue = !localStorage.getItem('rg.onb'); } catch (e) {}
 
 (async () => {
   const t = todayKey(); S.days = Array.from({ length: 7 }, (_, i) => addDays(t, i));
   const [reefs, tides, nd, fish] = await Promise.all([getJSON('reefs.json'), getJSON('tides.json').catch(() => []), getJSON('ndbc.json?' + Date.now()).catch(() => null), getJSON('data/fish.json').catch(() => null)]);
   S.fish = fish;
-  S.tides = tides; S.buoys = nd ? nd.stations : []; loadReefs(reefs); updateArea();
+  S.tides = tides; S.buoys = nd ? nd.stations : []; loadReefs(reefs); if (onbDue) showOnb(); else updateArea();
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 })();

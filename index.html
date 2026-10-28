@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>ReefGo</title>
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="apple-touch-icon" href="img/icon-180.png">
 <link rel="icon" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
@@ -66,6 +66,7 @@ input{font:inherit}
 .area span{display:block;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .area small{color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 .area[hidden]{display:none}
+.area .next{color:var(--ok);font-weight:700}.area .next[hidden]{display:none}
 
 /* markers */
 .mk{width:22px;height:22px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
@@ -126,6 +127,7 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 .fish .fl{display:flex;flex-direction:column}.fish .fl[hidden]{display:none}
 .fr{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
 .fl:last-of-type .fr:last-child{border-bottom:0}
+.fr .noimg{width:64px;height:44px;border-radius:8px;background:var(--line);flex:none}
 .fr img{width:64px;height:44px;object-fit:cover;border-radius:8px;background:var(--line);flex:none}
 .fr .ft{flex:1;min-width:0}.fr b{display:block;font-size:14px;font-weight:800;line-height:1.2}
 .fr span{display:block;font-size:12px;color:var(--muted)}.fr small{display:block;font-size:11px;color:var(--muted);line-height:1.3;margin-top:2px}
@@ -144,6 +146,26 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 .seg button{border:1.5px solid var(--line);border-radius:999px;padding:7px 12px;font-weight:700;font-size:13px}
 .seg button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .legend{display:flex;gap:10px;align-items:center;margin:6px 0;font-size:14px}.legend i{width:12px;height:12px;border-radius:50%;flex:none}
+
+/* onboarding */
+.onb{position:fixed;inset:0;z-index:3000;background:var(--bg);display:none;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 24px) 24px calc(env(safe-area-inset-bottom,0px) + 20px)}
+.onb.on{display:flex}
+.onb .step{display:none;flex:1;flex-direction:column}
+.onb .step.on{display:flex}
+.onb .dots{display:flex;gap:6px;margin-bottom:28px}.onb .dots i{width:28px;height:4px;border-radius:2px;background:var(--line)}.onb .dots i.on{background:var(--accent)}
+.onb .eyebrow{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.onb h2{font-size:30px;line-height:1.1;letter-spacing:-.02em;margin:6px 0 10px}
+.onb p{margin:0 0 14px;font-size:16px;color:var(--muted)}
+.onb .seg button{padding:12px 16px;font-size:15px;border-radius:14px}
+.onb .spacer{flex:1}
+.onb .cta{display:block;width:100%;padding:15px;border-radius:14px;background:var(--accent);color:#fff;font-weight:800;font-size:16px;text-align:center}
+.onb .ghost{display:block;width:100%;padding:12px;font-weight:700;color:var(--muted);text-align:center;margin-top:4px}
+.onb .demo{border-radius:18px;padding:16px;margin:4px 0 14px}
+.onb .demo b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em}
+.onb .demo span{font-size:14px}
+.onb .demo.v0{background:var(--ok-bg)}.onb .demo.v0 b{color:var(--ok)}
+.onb .demo.v1{background:var(--mid-bg)}.onb .demo.v1 b{color:var(--mid)}
+.onb .demo.v2{background:var(--no-bg)}.onb .demo.v2 b{color:var(--no)}
 @media (prefers-reduced-motion:reduce){.sheet{transition:none}}
 </style>
 </head>
@@ -160,22 +182,61 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 <div class="sug" id="sug"></div>
 <div class="satbar" id="satbar"></div>
 
-<div class="area" id="area" hidden><i class="v" id="areaDot"></i><div class="t"><small id="areaLbl">Conditions here · today</small><b id="areaH">Loading…</b><span id="areaS"></span></div></div>
+<div class="area" id="area" hidden><i class="v" id="areaDot"></i><div class="t"><small id="areaLbl">Conditions here · today</small><b id="areaH">Loading…</b><span id="areaS"></span><span id="areaN" class="next" hidden></span></div></div>
 
 <div class="sheet" id="sheet"><div class="grip" id="grip"></div><div class="in" id="sheetIn"></div></div>
+
+
+<div class="onb" id="onb" role="dialog" aria-label="Welcome">
+  <div class="step on" data-step="0">
+    <div class="dots"><i class="on"></i><i></i><i></i></div>
+    <div class="eyebrow">Welcome to ReefGo</div>
+    <h2>What do you ride?</h2>
+    <p>The “Go” verdict depends on your boat. A jet ski gets beaten up by seas a 26-footer barely notices. You can change this later in settings.</p>
+    <div class="seg" id="onbVessel"></div>
+    <div class="spacer"></div>
+    <button class="cta" data-next="1">Continue</button>
+  </div>
+  <div class="step" data-step="1">
+    <div class="dots"><i class="on"></i><i class="on"></i><i></i></div>
+    <div class="eyebrow">Step 2 of 3</div>
+    <h2>Find your water</h2>
+    <p>ReefGo covers the whole US coast. Share your location once and the map opens on your stretch of coast with the reefs you can actually reach.</p>
+    <p>Your location stays on this phone. It is never stored or sent anywhere except to fetch the local forecast.</p>
+    <div class="spacer"></div>
+    <button class="cta" id="onbLoc">Use my location</button>
+    <button class="ghost" data-next="2">I’ll search for my area instead</button>
+  </div>
+  <div class="step" data-step="2">
+    <div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i></div>
+    <div class="eyebrow">Step 3 of 3</div>
+    <h2>Tap a reef, get the answer</h2>
+    <p>Every reef gets two verdicts for the morning window, 7 am to 3 pm:</p>
+    <div class="demo v0"><b>Go and dive</b><span>Wind under 12 kt, seas under 2 ft. Easy ride, clear water.</span></div>
+    <div class="demo v1"><b>Go if you must</b><span>On the edge. Rough ride, or the water is still stirred up.</span></div>
+    <div class="demo v2"><b>No-go</b><span>Too much wind or sea for your boat. Stay home.</span></div>
+    <p>Below the verdict: the numbers, the buoys, the tide, the fish and the rules.</p>
+    <div class="spacer"></div>
+    <button class="cta" id="onbDone">Show me the map</button>
+  </div>
+</div>
 
 <div class="modal" id="settings">
   <div class="in">
     <h2>Your boat</h2>
     <p class="muted">Thresholds for the “Go” verdict depend on what you ride.</p>
     <div class="seg" id="vessel"></div>
+    <h2>Alerts</h2>
+    <label class="legend" style="gap:10px"><input type="checkbox" id="notifyOn" style="width:20px;height:20px;accent-color:var(--accent)"> Tell me when a window opens near my map</label>
+    <p class="muted" style="font-size:13px" id="notifyHint">Checked each time you open ReefGo: if a green day appears in the week ahead for the area on your map, you get a notification. Push alerts while the app is closed come with the App Store version.</p>
     <h2>How to read</h2>
     <div class="legend"><i style="background:var(--ok)"></i>Green — yes</div>
     <div class="legend"><i style="background:var(--mid)"></i>Yellow — only if you really want to</div>
     <div class="legend"><i style="background:var(--no)"></i>Red — no</div>
     <p class="muted" style="font-size:13px">Two separate answers: <b>Go</b> (can you get there and back) and <b>Dive</b> (can you safely be in the water: wave height, period and water clarity). Computed for 7 am–3 pm. Clarity recovers about two days after strong wind; the satellite layer shows it. Forecasts can be wrong — check on site. Not for navigation.</p>
-    <p class="muted" style="font-size:12px">Data: NWS/NOAA marine zones, Open-Meteo (GFS + ECMWF), NOAA CO-OPS tides, NASA GIBS imagery, state reef programs (FWC, TPWD, AL MRD, SCDNR, GA DNR, NC DMF, MARCO), FWC fishing rules. Fish photos: Wikimedia Commons contributors (<a href="https://github.com/alexp-automation/reefgo/blob/main/data/fish-credits.json" target="_blank" rel="noopener" style="color:var(--accent)">credits</a>).</p>
-    <button class="chip" id="setClose" style="width:100%;margin-top:8px">Done</button>
+    <p class="muted" style="font-size:13px"><a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)">Privacy policy</a> · No account, no tracking, no ads. Your settings live on this phone.</p>
+    <p class="muted" style="font-size:12px">Data: NWS/NOAA marine zones, Open-Meteo (GFS + ECMWF), NOAA CO-OPS tides, NASA GIBS imagery, state reef programs (FWC, AL MRD, MS DMR, LDWF, TPWD, GA DNR, SCDNR, NC DMF, MARCO, CDFW), FWC fishing rules. Fish photos: Wikimedia Commons contributors (<a href="https://github.com/alexp-automation/reefgo/blob/main/data/fish-credits.json" target="_blank" rel="noopener" style="color:var(--accent)">credits</a>).</p>
+    <div class="row" style="margin-top:8px"><button class="chip" id="setIntro" style="flex:1">Show intro again</button><button class="chip" id="setClose" style="flex:1;background:var(--fg);color:var(--bg)">Done</button></div>
   </div>
 </div>
 
