@@ -355,7 +355,8 @@ function loadRamps(list) {
   S.ramps = list; list.forEach(r => { r.kind = 'ramp'; const m = L.marker([r.lat, r.lon], { icon: mkIcon('x', false, true), zIndexOffset: -100 }); m.reef = r; m.bindTooltip(r.name, { direction: 'top', offset: [0, -10] }); m.on('click', () => openReef(r)); r.m = m; });
   rampCluster.addLayers(list.map(r => r.m)); syncRamps();
 }
-function syncRamps() { const show = map.getZoom() >= 9; if (show && !map.hasLayer(rampCluster)) map.addLayer(rampCluster); else if (!show && map.hasLayer(rampCluster)) map.removeLayer(rampCluster); $('legendMap').hidden = !show || $('sheet').classList.contains('on'); }
+function placeLegend() { const a = $('area'); const h = a.hidden ? 0 : a.getBoundingClientRect().height + 8; $('legendMap').style.bottom = `calc(env(safe-area-inset-bottom, 0px) + ${14 + h}px)`; }
+function syncRamps() { const show = map.getZoom() >= 9; if (show && !map.hasLayer(rampCluster)) map.addLayer(rampCluster); else if (!show && map.hasLayer(rampCluster)) map.removeLayer(rampCluster); $('legendMap').hidden = !show || $('sheet').classList.contains('on'); placeLegend(); }
 map.on('zoomend', syncRamps);
 // Per-cell forecasts: reefs in view are grouped into grid cells (size by zoom), one batched Open-Meteo request per 40 cells, each reef colored by its own cell for the selected day.
 function cellSize() { const z = map.getZoom(); return z >= 10 ? 0.25 : z >= 8 ? 0.5 : z >= 6 ? 1 : 2; }
@@ -414,6 +415,7 @@ async function updateArea() {
     const nx = nextWindow(fc, alerts); $('areaN').hidden = cls === 0; $('areaN').className = 'next ' + (nx ? 'n' + nx.cls : 'n2');
     if (cls !== 0) $('areaN').textContent = !nx ? t('No window in the next 7 days') : t(nx.cls === 0 ? 'Next window: {day} · {h}' : 'Best this week: {day} · {h}', { day: dayName(nx.key), h: headline(nx.v) });
     if (nx && nx.cls === 0) maybeNotify(nx, c);
+    placeLegend();
     $('areaS').textContent = t('{dir} {w} kt · seas {h} ft / {p} s · water {t}°F', { dir: dirTxt(s.dir), w: f0(s.windAvg), h: f1((s.wave || 0) * M2FT), p: f0(s.period), t: f0(F(s.sst)) }); }
   catch (e) { $('areaH').textContent = t('No forecast for this spot'); $('areaS').textContent = t('Move the map over coastal water'); }
 }
