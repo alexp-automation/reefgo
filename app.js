@@ -504,7 +504,7 @@ function rampReefsHTML(r) {
 function rampInfoHTML(r) {
   const rows = [];
   if (r.wb) rows.push([t('Water'), r.wb]); if (r.lanes) rows.push([t('Lanes'), r.lanes]); if (r.trl) rows.push([t('Trailer parking'), r.trl]);
-  rows.push([t('Fee'), r.fee ? t('Yes') : r.src === 'FWC' ? t('No') : '—']); if (r.wc != null) rows.push([t('Restroom'), r.wc ? t('Yes') : t('No')]); if (r.hours) rows.push([t('Hours'), r.hours]);
+  rows.push([t('Fee'), r.fee ? t('Yes') : r.fee === 0 || r.src === 'FWC' ? t('No') : '—']); if (r.wc != null) rows.push([t('Restroom'), r.wc ? t('Yes') : t('No')]); if (r.hours) rows.push([t('Hours'), r.hours]);
   const who = [r.city, r.op].filter(Boolean).join(' · ');
   return `<div class="card"><h3>${esc(r.name)}</h3>${who ? `<p style="margin:0 0 6px;font-size:14px">${esc(who)}</p>` : ''}<div class="kv">${rows.map(([k, v]) => `<span>${esc(k)}</span><b>${esc(v)}</b>`).join('')}</div><p class="muted" style="margin:6px 0 0;font-size:12px">${r.at ? t('Verdict for the waters off this ramp: forecast and NWS zone taken at {reef}, {d} nm out. ', { reef: esc(r.at.name || r.at.id), d: f0(nm(r, r.at)) }) : ''}${r.src === 'FWC' ? t('FWC Florida Boat Ramp Inventory. Conditions and fees change: check before you tow.') : t('OpenStreetMap. Details may be incomplete: check before you tow.')}</p></div>`;
 }
