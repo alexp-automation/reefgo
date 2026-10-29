@@ -88,6 +88,17 @@ es: {
   'ReefGo: window opens {day}': 'ReefGo: se abre ventana {day}', '{h}. Wind {w} kt, seas {s} ft.': '{h}. Viento {w} kt, mar {s} ft.',
   'Alerts are off in this browser. On iPhone they work only from the Home Screen: tap Share in Safari, choose “Add to Home Screen”, then open ReefGo from that icon and turn this on.': 'Las alertas están desactivadas en este navegador. En iPhone solo funcionan desde la pantalla de inicio: toca Compartir en Safari, elige “Añadir a pantalla de inicio”, abre ReefGo desde ese icono y actívalas.',
   'Finding you…': 'Localizándote…', 'Location unavailable. Continue': 'Ubicación no disponible. Continuar',
+  // satellite help
+  'How to read the satellite photo': 'Cómo leer la foto de satélite',
+  'Tampa Bay and Anclote, Terra, Oct 24 2026. One pass per sensor per day, around 1–2 pm local; the photo shows the water at that moment, not now.': 'Bahía de Tampa y Anclote, Terra, 24 oct 2026. Una pasada por sensor y día, hacia la 1–2 pm local; la foto muestra el agua en ese momento, no ahora.',
+  'Deep, clear water': 'Agua profunda y clara', 'Green band: murky nearshore': 'Banda verde: turbia junto a la costa', 'River plume after rain': 'Pluma del río tras la lluvia', 'Clouds, not water': 'Nubes, no es agua', 'Bay water: greener, shallower': 'Agua de bahía: más verde, más somera',
+  '<b>Dark blue</b> is deep, clear water. The darker, the clearer.': '<b>Azul oscuro</b> es agua profunda y clara. Cuanto más oscuro, más clara.',
+  '<b>Green or brown</b> along the coast is stirred-up water: sand and plankton after wind or rain. It drifts with the current, so look where the band ends.': '<b>Verde o marrón</b> junto a la costa es agua revuelta: arena y plancton tras viento o lluvia. Se desplaza con la corriente: mira dónde termina la banda.',
+  '<b>Light turquoise</b> over shallows is bright sand showing through, not murk.': '<b>Turquesa claro</b> sobre los bajos es arena clara que se transparenta, no turbidez.',
+  '<b>White</b> is cloud; grey patches next to it are cloud shadows. Black or blank means no pass that day.': '<b>Blanco</b> es nube; las manchas grises al lado son sus sombras. Negro o vacío significa que no hubo pasada ese día.',
+  '<b>Silver sheen</b> on open water is sun glint, not murk.': '<b>Brillo plateado</b> en mar abierto es reflejo del sol, no turbidez.',
+  'One pixel is 250–750 m, so a reef is a dot: judge the area around it, and compare days to see the water clearing.': 'Un píxel son 250–750 m, así que un arrecife es un punto: juzga la zona alrededor y compara días para ver cómo se aclara el agua.',
+  'Got it': 'Entendido',
   // static page text (index.html, keyed by English innerHTML)
   'Reef, city or state': 'Arrecife, ciudad o estado', 'Search': 'Buscar', 'My location': 'Mi ubicación', 'Satellite': 'Satélite', 'Settings': 'Ajustes', 'Home': 'Inicio',
   'Conditions here · today': 'Condiciones aquí · hoy', 'Loading…': 'Cargando…',

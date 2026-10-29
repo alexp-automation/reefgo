@@ -194,6 +194,14 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 .onb .demo.v0{background:var(--ok-bg)}.onb .demo.v0 b{color:var(--ok)}
 .onb .demo.v1{background:var(--mid-bg)}.onb .demo.v1 b{color:var(--mid)}
 .onb .demo.v2{background:var(--no-bg)}.onb .demo.v2 b{color:var(--no)}
+
+/* satellite help */
+.sathelp .pic{position:relative;border-radius:14px;overflow:hidden;margin:8px 0 12px}
+.sathelp .pic img{display:block;width:100%;height:auto}
+.sathelp .tag{position:absolute;transform:translate(-50%,-50%);background:rgba(255,255,255,.92);color:#0e1b2a;font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.sathelp .tag::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle;background:var(--c,#0b6e8f)}
+.sathelp ul{margin:0;padding-left:18px;font-size:14px}.sathelp li{margin:4px 0}
+.sathelp .cap{font-size:12px;color:var(--muted);margin:0 0 6px}
 @media (prefers-reduced-motion:reduce){.sheet{transition:none}}
 </style>
 </head>
@@ -249,6 +257,30 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
   </div>
 </div>
 
+
+<div class="modal sathelp" id="satHelp">
+  <div class="in">
+    <h2 data-i18n>How to read the satellite photo</h2>
+    <p class="cap" data-i18n>Tampa Bay and Anclote, Terra, Oct 24 2026. One pass per sensor per day, around 1–2 pm local; the photo shows the water at that moment, not now.</p>
+    <div class="pic"><img src="img/sat-example.jpg" alt="">
+      <span class="tag" style="left:26%;top:58%;--c:#0b2a55" data-i18n>Deep, clear water</span>
+      <span class="tag" style="left:54%;top:30%;--c:#3f8f5a" data-i18n>Green band: murky nearshore</span>
+      <span class="tag" style="left:50%;top:9%;--c:#6aa84f" data-i18n>River plume after rain</span>
+      <span class="tag" style="left:14%;top:88%;--c:#fff" data-i18n>Clouds, not water</span>
+      <span class="tag" style="left:64%;top:72%;--c:#5c8f6e" data-i18n>Bay water: greener, shallower</span>
+    </div>
+    <ul>
+      <li data-i18n><b>Dark blue</b> is deep, clear water. The darker, the clearer.</li>
+      <li data-i18n><b>Green or brown</b> along the coast is stirred-up water: sand and plankton after wind or rain. It drifts with the current, so look where the band ends.</li>
+      <li data-i18n><b>Light turquoise</b> over shallows is bright sand showing through, not murk.</li>
+      <li data-i18n><b>White</b> is cloud; grey patches next to it are cloud shadows. Black or blank means no pass that day.</li>
+      <li data-i18n><b>Silver sheen</b> on open water is sun glint, not murk.</li>
+      <li data-i18n>One pixel is 250–750 m, so a reef is a dot: judge the area around it, and compare days to see the water clearing.</li>
+    </ul>
+    <button class="chip" id="satHelpClose" style="width:100%;margin-top:12px;background:var(--fg);color:var(--bg)" data-i18n>Got it</button>
+  </div>
+</div>
+
 <div class="modal" id="settings">
   <div class="in">
     <h2 data-i18n>What are you doing today?</h2>
@@ -279,7 +311,7 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
-<script src="i18n.js?v=22"></script>
-<script src="app.js?v=22"></script>
+<script src="i18n.js?v=23"></script>
+<script src="app.js?v=23"></script>
 </body>
 </html>

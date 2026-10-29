@@ -367,9 +367,11 @@ function buildSat() { const tk = todayKey(); const bar = $('satbar'); bar.innerH
   for (let i = 0; i < 7; i++) { const k = addDays(tk, -i); const b = document.createElement('button'); b.className = 'chip' + (k === S.sat.date ? ' on' : ''); b.textContent = i === 0 ? t('Today') : i === 1 ? t('Yesterday') : `${t(MON[+k.slice(5, 7) - 1])} ${+k.slice(8)}`; b.onclick = () => { S.sat.date = k; S.sat.off = null; buildSat(); applySat(); }; days.appendChild(b); }
   const sens = row(t('Sensor'));
   GIBS.forEach(([n, id]) => { const b = document.createElement('button'); b.className = 'chip' + (id === S.sat.layer ? ' on' : '') + (S.sat.off && S.sat.off.has(id) ? ' off' : ''); b.textContent = n; b.title = S.sat.off && S.sat.off.has(id) ? t('No image here for this day') : ''; b.onclick = () => { S.sat.layer = id; buildSat(); applySat(); }; sens.appendChild(b); });
+  const q = document.createElement('button'); q.className = 'chip'; q.textContent = '?'; q.title = t('How to read the satellite photo'); q.onclick = () => $('satHelp').classList.add('on'); sens.appendChild(q);
   const hint = document.createElement('div'); hint.className = 'sathint'; hint.textContent = t('True-color photo, one pass per sensor per day. Black or blank: no pass or clouds here. Try another sensor or day.'); bar.appendChild(hint); }
 function toggleSat(force) { S.sat.on = force == null ? !S.sat.on : force; $('satBtn').classList.toggle('on', S.sat.on); $('satbar').classList.toggle('on', S.sat.on); applySat(); }
 $('satBtn').onclick = () => toggleSat();
+$('satHelpClose').onclick = () => $('satHelp').classList.remove('on'); $('satHelp').onclick = e => { if (e.target === $('satHelp')) $('satHelp').classList.remove('on'); };
 S.sat.date = addDays(todayKey(), -1); buildSat();
 
 // brand → home: close everything, drop the satellite layer, fly to your location if known, else to the last map view
