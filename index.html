@@ -202,15 +202,15 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 
 <div class="top">
   <button class="brand" id="brand" aria-label="Home">Reef<span>Go</span></button>
-  <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" placeholder="Reef, city or state" autocomplete="off" aria-label="Search"></label>
-  <button class="iconbtn" id="locBtn" aria-label="My location"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg></button>
-  <button class="iconbtn" id="satBtn" aria-label="Satellite"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 18 0 9 9 0 0 1-18 0z"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></button>
-  <button class="iconbtn" id="setBtn" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" placeholder="Reef, city or state" autocomplete="off" aria-label="Search" data-i18n-attr="placeholder|Reef, city or state"></label>
+  <button class="iconbtn" id="locBtn" aria-label="My location" data-i18n-attr="aria-label|My location"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg></button>
+  <button class="iconbtn" id="satBtn" aria-label="Satellite" data-i18n-attr="aria-label|Satellite"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 18 0 9 9 0 0 1-18 0z"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></button>
+  <button class="iconbtn" id="setBtn" aria-label="Settings" data-i18n-attr="aria-label|Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
 </div>
 <div class="sug" id="sug"></div>
 <div class="satbar" id="satbar"></div>
 
-<div class="area" id="area" hidden><i class="v" id="areaDot"></i><div class="t"><small id="areaLbl">Conditions here · today</small><b id="areaH">Loading…</b><span id="areaS"></span><span id="areaN" class="next" hidden></span></div></div>
+<div class="area" id="area" hidden><i class="v" id="areaDot"></i><div class="t"><small id="areaLbl" data-i18n>Conditions here · today</small><b id="areaH" data-i18n>Loading…</b><span id="areaS"></span><span id="areaN" class="next" hidden></span></div></div>
 
 <div class="sheet" id="sheet"><div class="grip" id="grip"></div><div class="in" id="sheetIn"></div></div>
 
@@ -218,65 +218,68 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 <div class="onb" id="onb" role="dialog" aria-label="Welcome">
   <div class="step on" data-step="0">
     <div class="dots"><i class="on"></i><i></i><i></i></div>
-    <div class="eyebrow">Welcome to ReefGo</div>
-    <h2>What do you ride?</h2>
-    <p>The “Go” verdict depends on your boat. A jet ski gets beaten up by seas a 26-footer barely notices.</p>
-    <p>ReefGo starts in <b>Fishing</b> mode and judges the anchor. Spearfishing or diving today? Switch in settings, any time, for the day’s plan.</p>
+    <div class="eyebrow" data-i18n>Welcome to ReefGo</div>
+    <h2 data-i18n>What do you ride?</h2>
+    <p data-i18n>The “Go” verdict depends on your boat. A jet ski gets beaten up by seas a 26-footer barely notices.</p>
+    <p data-i18n>ReefGo starts in <b>Fishing</b> mode and judges the anchor. Spearfishing or diving today? Switch in settings, any time, for the day’s plan.</p>
     <div class="seg" id="onbVessel"></div>
     <div class="spacer"></div>
-    <div class="foot"><button class="cta" data-next="1">Continue</button></div>
+    <div class="foot"><button class="cta" data-next="1" data-i18n>Continue</button></div>
   </div>
   <div class="step" data-step="1">
     <div class="dots"><i class="on"></i><i class="on"></i><i></i></div>
-    <div class="eyebrow">Step 2 of 3</div>
-    <h2>Find your water</h2>
-    <p>ReefGo covers the whole US coast. Share your location once and the map opens on your stretch of coast with the reefs you can actually reach.</p>
-    <p>Your location stays on this phone. It is never stored or sent anywhere except to fetch the local forecast.</p>
+    <div class="eyebrow" data-i18n>Step 2 of 3</div>
+    <h2 data-i18n>Find your water</h2>
+    <p data-i18n>ReefGo covers the whole US coast. Share your location once and the map opens on your stretch of coast with the reefs you can actually reach.</p>
+    <p data-i18n>Your location stays on this phone. It is never stored or sent anywhere except to fetch the local forecast.</p>
     <div class="spacer"></div>
-    <div class="foot"><button class="cta" id="onbLoc">Use my location</button><button class="ghost" data-next="2">I’ll search for my area instead</button></div>
+    <div class="foot"><button class="cta" id="onbLoc" data-i18n>Use my location</button><button class="ghost" data-next="2" data-i18n>I’ll search for my area instead</button></div>
   </div>
   <div class="step" data-step="2">
     <div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i></div>
-    <div class="eyebrow">Step 3 of 3</div>
-    <h2>Tap a reef, get the answer</h2>
-    <p>Every reef gets two verdicts for the time you plan to be out: morning, midday, evening or all day. Switch it any time on the reef card.</p>
-    <div class="demo v0"><b>Go and dive</b><span>Wind under 12 kt, seas under 2 ft. Easy ride, clear water.</span></div>
-    <div class="demo v1"><b>Go if you must</b><span>On the edge. Rough ride, or the water is still stirred up.</span></div>
-    <div class="demo v2"><b>No-go</b><span>Too much wind or sea for your boat. Stay home.</span></div>
-    <p>Below the verdict: the numbers, the buoys, the tide, the fish and the rules.</p>
+    <div class="eyebrow" data-i18n>Step 3 of 3</div>
+    <h2 data-i18n>Tap a reef, get the answer</h2>
+    <p data-i18n>Every reef gets two verdicts for the time you plan to be out: morning, midday, evening or all day. Switch it any time on the reef card.</p>
+    <div class="demo v0"><b data-i18n>Go and dive</b><span data-i18n>Wind under 12 kt, seas under 2 ft. Easy ride, clear water.</span></div>
+    <div class="demo v1"><b data-i18n>Go if you must</b><span data-i18n>On the edge. Rough ride, or the water is still stirred up.</span></div>
+    <div class="demo v2"><b data-i18n>No-go</b><span data-i18n>Too much wind or sea for your boat. Stay home.</span></div>
+    <p data-i18n>Below the verdict: the numbers, the buoys, the tide, the fish and the rules.</p>
     <div class="spacer"></div>
-    <div class="foot"><button class="cta" id="onbDone">Show me the map</button></div>
+    <div class="foot"><button class="cta" id="onbDone" data-i18n>Show me the map</button></div>
   </div>
 </div>
 
 <div class="modal" id="settings">
   <div class="in">
-    <h2>What are you doing today?</h2>
-    <p class="muted">Switch any time. Fishing judges the anchor, spearfishing and diving judge the water.</p>
+    <h2 data-i18n>What are you doing today?</h2>
+    <p class="muted" data-i18n>Switch any time. Fishing judges the anchor, spearfishing and diving judge the water.</p>
     <div class="seg" id="act"></div>
-    <div id="solunarRow" hidden><label class="legend" style="gap:10px"><input type="checkbox" id="solunarOn" style="width:20px;height:20px;accent-color:var(--accent)"> Show solunar majors and minors</label><p class="muted" style="font-size:12px;margin-top:0">Moon tables. Unproven: a 2023 study found no link to catch rates. Off by default.</p></div>
-    <h2>Your boat</h2>
-    <p class="muted">Thresholds for the “Go” verdict depend on what you ride.</p>
+    <div id="solunarRow" hidden><label class="legend" style="gap:10px"><input type="checkbox" id="solunarOn" style="width:20px;height:20px;accent-color:var(--accent)"> <span data-i18n>Show solunar majors and minors</span></label><p class="muted" style="font-size:12px;margin-top:0" data-i18n>Moon tables. Unproven: a 2023 study found no link to catch rates. Off by default.</p></div>
+    <h2 data-i18n>Your boat</h2>
+    <p class="muted" data-i18n>Thresholds for the “Go” verdict depend on what you ride.</p>
     <div class="seg" id="vessel"></div>
-    <h2>Night mode</h2>
+    <h2 data-i18n>Language</h2>
+    <div class="seg" id="lang"></div>
+    <h2 data-i18n>Night mode</h2>
     <div class="seg" id="theme"></div>
-    <p class="muted" style="font-size:13px">Auto dims the app and the map from sunset to sunrise at your map position.</p>
-    <h2>Alerts</h2>
-    <label class="legend" style="gap:10px"><input type="checkbox" id="notifyOn" style="width:20px;height:20px;accent-color:var(--accent)"> Tell me when a window opens near my map</label>
-    <p class="muted" style="font-size:13px" id="notifyHint">Checked each time you open ReefGo: if a green day appears in the week ahead for the area on your map, you get a notification. Push alerts while the app is closed come with the App Store version.</p>
-    <h2>How to read</h2>
-    <div class="legend"><i style="background:var(--ok)"></i>Green — yes</div>
-    <div class="legend"><i style="background:var(--mid)"></i>Yellow — only if you really want to</div>
-    <div class="legend"><i style="background:var(--no)"></i>Red — no</div>
-    <p class="muted" style="font-size:13px">Two separate answers: <b>Go</b> (can you get there and back) and <b>Fish</b> (can you sit on the reef at anchor: wind, gusts, seas and period) or <b>Dive</b> (can you safely be in the water: seas, period and clarity). Computed for the time window you pick on the reef card (morning by default; evening runs to sunset). Clarity recovers about two days after strong wind; the satellite card estimates it, the satellite layer shows it. Forecasts can be wrong — check on site. Not for navigation.</p>
-    <p class="muted" style="font-size:13px"><a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)">Privacy policy</a> · No account, no tracking, no ads. Your settings live on this phone.</p>
+    <p class="muted" style="font-size:13px" data-i18n>Auto dims the app and the map from sunset to sunrise at your map position.</p>
+    <h2 data-i18n>Alerts</h2>
+    <label class="legend" style="gap:10px"><input type="checkbox" id="notifyOn" style="width:20px;height:20px;accent-color:var(--accent)"> <span data-i18n>Tell me when a window opens near my map</span></label>
+    <p class="muted" style="font-size:13px" id="notifyHint" data-i18n>Checked each time you open ReefGo: if a green day appears in the week ahead for the area on your map, you get a notification. Push alerts while the app is closed come with the App Store version.</p>
+    <h2 data-i18n>How to read</h2>
+    <div class="legend"><i style="background:var(--ok)"></i data-i18n>Green — yes</div>
+    <div class="legend"><i style="background:var(--mid)"></i data-i18n>Yellow — only if you really want to</div>
+    <div class="legend"><i style="background:var(--no)"></i data-i18n>Red — no</div>
+    <p class="muted" style="font-size:13px" data-i18n>Two separate answers: <b>Go</b> (can you get there and back) and <b>Fish</b> (can you sit on the reef at anchor: wind, gusts, seas and period) or <b>Dive</b> (can you safely be in the water: seas, period and clarity). Computed for the time window you pick on the reef card (morning by default; evening runs to sunset). Clarity recovers about two days after strong wind; the satellite card estimates it, the satellite layer shows it. Forecasts can be wrong — check on site. Not for navigation.</p>
+    <p class="muted" style="font-size:13px"><a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)" data-i18n>Privacy policy</a><span data-i18n> · No account, no tracking, no ads. Your settings live on this phone.</span></p>
     <p class="muted" style="font-size:12px">Data: NWS/NOAA marine zones, Open-Meteo (GFS + ECMWF), NOAA CO-OPS tides, NASA GIBS imagery, NOAA CoastWatch Kd490 water clarity, state reef programs (FWC, AL MRD, MS DMR, LDWF, TPWD, GA DNR, SCDNR, NC DMF, MARCO, CDFW, WA DNR, HI DAR, NOAA ENC), FWC fishing rules. Fish photos: Wikimedia Commons contributors (<a href="https://github.com/alexp-automation/reefgo/blob/main/data/fish-credits.json" target="_blank" rel="noopener" style="color:var(--accent)">credits</a>).</p>
-    <div class="row" style="margin-top:8px"><button class="chip" id="setIntro" style="flex:1">Show intro again</button><button class="chip" id="setClose" style="flex:1;background:var(--fg);color:var(--bg)">Done</button></div>
+    <div class="row" style="margin-top:8px"><button class="chip" id="setIntro" style="flex:1" data-i18n>Show intro again</button><button class="chip" id="setClose" style="flex:1;background:var(--fg);color:var(--bg)" data-i18n>Done</button></div>
   </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
-<script src="app.js?v=21"></script>
+<script src="i18n.js?v=22"></script>
+<script src="app.js?v=22"></script>
 </body>
 </html>
