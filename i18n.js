@@ -65,7 +65,7 @@ es: {
   'Solunar (unproven): {s}.': 'Solunar (sin evidencia): {s}.', 'Majors {a}, {b} · minors {c}, {d}': 'Mayores {a}, {b} · menores {c}, {d}',
   '{nm} nm from shore: ': 'A {nm} nm de la costa: ', '<b>state waters</b> (limit {l} nm), the rules above apply.': '<b>aguas estatales</b> (límite {l} nm), aplican las normas de arriba.',
   '<b>federal waters</b> (state limit {l} nm): federal seasons and limits apply and differ from the state rules above. Check before you go.': '<b>aguas federales</b> (límite estatal {l} nm): aplican temporadas y cupos federales, distintos de las normas estatales de arriba. Verifica antes de salir.',
-  ' Reef fish in the Gulf: a descending device or venting tool must be on board.': ' Peces de arrecife en el Golfo: hay que llevar a bordo un dispositivo de descenso o aguja de venteo.',
+  ' Reef fish: keep a descending device or venting tool on board. Florida requires it; the federal Gulf rule lapsed in Jan 2026 and is being renewed.': ' Peces de arrecife: lleva a bordo un dispositivo de descenso o aguja de venteo. Florida lo exige; la norma federal del Golfo caducó en enero de 2026 y se está renovando.',
   // area card
   'Checking conditions…': 'Comprobando condiciones…', 'Conditions here · {day} · {win}': 'Condiciones aquí · {day} · {win}', 'No window in the next 7 days': 'Sin ventana en los próximos 7 días',
   'Next window: {day} · {h}': 'Próxima ventana: {day} · {h}', 'Best this week: {day} · {h}': 'Lo mejor de la semana: {day} · {h}',
@@ -88,6 +88,7 @@ es: {
   'ReefGo: window opens {day}': 'ReefGo: se abre ventana {day}', '{h}. Wind {w} kt, seas {s} ft.': '{h}. Viento {w} kt, mar {s} ft.',
   'Alerts are off in this browser. On iPhone they work only from the Home Screen: tap Share in Safari, choose “Add to Home Screen”, then open ReefGo from that icon and turn this on.': 'Las alertas están desactivadas en este navegador. En iPhone solo funcionan desde la pantalla de inicio: toca Compartir en Safari, elige “Añadir a pantalla de inicio”, abre ReefGo desde ese icono y actívalas.',
   'Finding you…': 'Localizándote…', 'Location unavailable. Continue': 'Ubicación no disponible. Continuar',
+  ' Snapshot of federal NOAA rules for these waters; seasons change yearly. ': ' Resumen de las normas federales de NOAA para estas aguas; las temporadas cambian cada año. ', 'NOAA federal rules': 'Normas federales NOAA', 'Not federally managed: state rule shown': 'Sin gestión federal: se muestra la norma estatal', '<b>federal waters</b> (state limit {l} nm): the federal rules above apply.': '<b>aguas federales</b> (límite estatal {l} nm): aplican las normas federales de arriba.',
   // satellite help
   'How to read the satellite photo': 'Cómo leer la foto de satélite',
   'Tampa Bay and Anclote, Terra, Oct 24 2026. One pass per sensor per day, around 1–2 pm local; the photo shows the water at that moment, not now.': 'Bahía de Tampa y Anclote, Terra, 24 oct 2026. Una pasada por sensor y día, hacia la 1–2 pm local; la foto muestra el agua en ese momento, no ahora.',

@@ -196,6 +196,9 @@ function lead(s, v, z, fc) {
 // Region: FL splits into Gulf and Atlantic (Atlantic counties + Monroe); other states use the state code. Rules exist for FL only; other states get the species list + a link.
 const FL_ATL = new Set(['Nassau', 'Duval', 'St. Johns', 'Flagler', 'Volusia', 'Brevard', 'Indian River', 'St. Lucie', 'Martin', 'Palm Beach', 'Broward', 'Miami-Dade', 'Monroe']);
 function fishRegion(r) { if (r.st === 'FL') return r.county ? (FL_ATL.has(r.county) ? 'fla' : 'flg') : (r.lon > -81.6 ? 'fla' : 'flg'); return S.fish && S.fish.regions[r.st] ? r.st : null; }
+// state-waters limit and whether the reef sits in federal waters (reefs.json nm = distance to shore)
+function stateLimit(r, reg) { return reg === 'flg' || r.st === 'TX' ? 9 : 3; }
+function isFederal(r, reg) { return r.nm != null && r.nm > stateLimit(r, reg); }
 function fishGroup(reg) { for (const [g, list] of Object.entries(S.fish.groups)) if (list.includes(reg)) return g; return null; }
 // season → 'open' | 'closed' | 'check'. Entries: YYYY-MM-DD..YYYY-MM-DD (that year only) or MM-DD..MM-DD (every year, may wrap the new year).
 function seasonStatus(season, key) {
@@ -210,24 +213,30 @@ function seasonStatus(season, key) {
 function fishList(r, key) {
   const reg = fishRegion(r); if (!reg) return null; const grp = fishGroup(reg); if (!grp) return null;
   const fl = reg === 'flg' || reg === 'fla'; const d = r.depth;
+  const fed = isFederal(r, reg) && (grp === 'gulf' || grp === 'satl'); const fedKey = grp === 'gulf' ? 'fedg' : 'feds';
   const list = S.fish.species.filter(sp => sp.groups.includes(grp) && (d == null || sp.minDepth <= d + 5)).map(sp => {
-    const rule = fl ? (sp.rules[reg] || sp.rules.fl) : null;
+    const stateRule = fl ? (sp.rules[reg] || sp.rules.fl) : null;
+    let rule = stateRule, src = fl ? 'state' : null;
+    if (fed) { let fr = sp.rules[fedKey];
+      if (fr && fr.states) fr = fr.states[r.st] ? Object.assign({}, fr, fr.states[r.st]) : sp.id === 'redsnapper' && r.st === 'FL' && stateRule ? Object.assign({}, stateRule, { note: "Florida's season applies in federal waters off Florida" }) : fr;
+      if (fr && fr.managed !== false) { rule = fr; src = 'fed'; } else if (fr && fr.managed === false) { src = fl ? 'state' : null; } else { rule = null; src = null; } }
     let st = sp.protected ? 'protected' : !rule ? 'rules' : seasonStatus(rule.season, key);
-    return { sp, rule, st };
+    return { sp, rule, st, src };
   });
   const order = { open: 0, check: 1, closed: 2, protected: 3, rules: 0 };
   list.sort((a, b) => order[a.st] - order[b.st] || a.sp.minDepth - b.sp.minDepth);
-  return { reg, fl, list, url: S.fish.regions[reg].url, name: S.fish.regions[reg].name };
+  const fedReg = fed ? S.fish.regions[fedKey] : null;
+  return { reg, fl, fed, hasRules: fl || fed, list, url: fed && fedReg ? fedReg.url : S.fish.regions[reg].url, name: fed && fedReg ? fedReg.name : S.fish.regions[reg].name };
 }
 const PILL = { open: 'Open', closed: 'Closed', check: 'Check season', protected: 'Protected', rules: 'See rules' }; // translated with t() at render
 function fishHTML(r, key, s) {
   if (!S.fish) return ''; const f = fishList(r, key); if (!f || !f.list.length) return '';
   const n = f.list.filter(x => x.st === 'open').length, c = f.list.filter(x => x.st === 'closed' || x.st === 'protected').length;
-  const head = f.fl ? t('Fish here · {n} open {day}, {c} closed', { n, day: dayName(key).toLowerCase(), c }) : t('{n} species · {name} rules', { n: f.list.length, name: esc(f.name) });
-  const row = x => `<div class="fr">${x.sp.img ? `<img src="${x.sp.img}" alt="" loading="lazy">` : '<i class="noimg"></i>'}<div class="ft"><b>${esc(x.sp.name)}</b><span>${x.rule ? esc([x.rule.size !== 'none' && x.rule.size !== '—' ? t('min ') + x.rule.size : null, t('bag ') + x.rule.bag].filter(Boolean).join(' · ')) : `<i>${esc(x.sp.sci)}</i>`}</span>${x.rule && x.rule.note ? `<small>${esc(x.rule.note)}${x.rule.verify ? t(' · verify') : ''}</small>` : x.rule && x.rule.verify ? `<small>${t('Verify on myfwc.com')}</small>` : ''}</div><em class="pill ${x.st}">${t(PILL[x.st])}</em></div>`;
+  const head = f.hasRules ? t('Fish here · {n} open {day}, {c} closed', { n, day: dayName(key).toLowerCase(), c }) : t('{n} species · {name} rules', { n: f.list.length, name: esc(f.name) });
+  const row = x => `<div class="fr">${x.sp.img ? `<img src="${x.sp.img}" alt="" loading="lazy">` : '<i class="noimg"></i>'}<div class="ft"><b>${esc(x.sp.name)}</b><span>${x.rule ? esc([x.rule.size !== 'none' && x.rule.size !== '—' ? t('min ') + x.rule.size : null, t('bag ') + x.rule.bag].filter(Boolean).join(' · ')) : `<i>${esc(x.sp.sci)}</i>`}</span>${x.rule && x.rule.note ? `<small>${esc(x.rule.note)}${x.rule.verify ? t(' · verify') : ''}</small>` : x.rule && x.rule.verify ? `<small>${t('Verify on myfwc.com')}</small>` : ''}${f.fed && x.src === 'state' ? `<small>${t('Not federally managed: state rule shown')}</small>` : ''}</div><em class="pill ${x.st}">${t(PILL[x.st])}</em></div>`;
   const first = f.list.slice(0, 7), rest = f.list.slice(7);
-  return `<div class="card fish"><h3>${f.fl ? head : t('Fish here · {n} open {day}, {c} closed').split(' · ')[0] + ' · ' + head}</h3>${s ? tempHintHTML(r, s) : ''}<div class="fl">${first.map(row).join('')}</div>${rest.length ? `<div class="fl more" hidden>${rest.map(row).join('')}</div><button class="link" data-more>${t('Show {n} more', { n: rest.length })}</button>` : ''}
-    <p class="muted" style="margin:8px 0 0;font-size:12px">${f.fl ? t('Open: season open on this day in these waters, with the minimum size and daily bag. Closed: no harvest that day. Protected: never. ') + (S.act === 'spear' ? esc(t(S.fish.flNoSpear)) : '') + t(' Snapshot of FWC rules; seasons change yearly. ') : t('Size, bag and season limits are set by {name}. ', { name: esc(f.name) })}<a href="${f.url}" target="_blank" rel="noopener">${f.fl ? t('FWC rules') : t('{name} rules', { name: esc(f.name) })}</a>${t('. Species guessed from reef depth{d}, not a survey.', { d: r.depth ? ` (${f0(r.depth)} ft)` : '' })}</p>${watersHTML(r, f)}</div>`;
+  return `<div class="card fish"><h3>${f.hasRules ? head : t('Fish here · {n} open {day}, {c} closed').split(' · ')[0] + ' · ' + head}</h3>${s ? tempHintHTML(r, s) : ''}<div class="fl">${first.map(row).join('')}</div>${rest.length ? `<div class="fl more" hidden>${rest.map(row).join('')}</div><button class="link" data-more>${t('Show {n} more', { n: rest.length })}</button>` : ''}
+    <p class="muted" style="margin:8px 0 0;font-size:12px">${f.hasRules ? t('Open: season open on this day in these waters, with the minimum size and daily bag. Closed: no harvest that day. Protected: never. ') + (S.act === 'spear' && f.fl ? esc(t(S.fish.flNoSpear)) : '') + (f.fed ? t(' Snapshot of federal NOAA rules for these waters; seasons change yearly. ') : t(' Snapshot of FWC rules; seasons change yearly. ')) : t('Size, bag and season limits are set by {name}. ', { name: esc(f.name) })}<a href="${f.url}" target="_blank" rel="noopener">${f.fed ? t('NOAA federal rules') : f.fl ? t('FWC rules') : t('{name} rules', { name: esc(f.name) })}</a>${t('. Species guessed from reef depth{d}, not a survey.', { d: r.depth ? ` (${f0(r.depth)} ft)` : '' })}</p>${watersHTML(r, f)}</div>`;
 }
 
 // ---------- angler extras: best bite, moon, pressure, solunar ----------
@@ -268,9 +277,10 @@ function biteHTML(r, fc, key, s, tst, td) {
 }
 // state vs federal waters by distance from shore: FL Gulf and TX 9 nm, everywhere else 3 nm
 function watersHTML(r, f) {
-  if (r.nm == null) return ''; const limit = (f && f.reg === 'flg') || r.st === 'TX' ? 9 : 3; const state = r.nm <= limit;
+  if (r.nm == null) return ''; const limit = stateLimit(r, f ? f.reg : ''); const state = r.nm <= limit;
   const gulf = f && S.fish.groups.gulf.includes(f.reg);
-  return `<p class="muted" style="margin:8px 0 0;font-size:12px">${t('{nm} nm from shore: ', { nm: f0(r.nm) })}${state ? t('<b>state waters</b> (limit {l} nm), the rules above apply.', { l: limit }) : t('<b>federal waters</b> (state limit {l} nm): federal seasons and limits apply and differ from the state rules above. Check before you go.', { l: limit })}${gulf ? t(' Reef fish in the Gulf: a descending device or venting tool must be on board.') : ''}</p>`;
+  const txt = state ? t('<b>state waters</b> (limit {l} nm), the rules above apply.', { l: limit }) : f && f.fed ? t('<b>federal waters</b> (state limit {l} nm): the federal rules above apply.', { l: limit }) : t('<b>federal waters</b> (state limit {l} nm): federal seasons and limits apply and differ from the state rules above. Check before you go.', { l: limit });
+  return `<p class="muted" style="margin:8px 0 0;font-size:12px">${t('{nm} nm from shore: ', { nm: f0(r.nm) })}${txt}${gulf ? t(' Reef fish: keep a descending device or venting tool on board. Florida requires it; the federal Gulf rule lapsed in Jan 2026 and is being renewed.') : ''}</p>`;
 }
 function tempHintHTML(r, s) {
   if (S.act !== 'fish' || s.sst == null || !S.fish) return ''; const f = fishList(r, S.days[S.day]); if (!f) return ''; const F = Math.round(s.sst * 9 / 5 + 32);

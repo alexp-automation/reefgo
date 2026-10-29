@@ -1,5 +1,5 @@
 {
- "_note": "Rules snapshot 2026-10-27 from myfwc.com (see fwc-regs-2026.md). Seasons: null = year-round, 'closed' = closed, list of [start,end] with YYYY-MM-DD (that year only) or MM-DD (every year, may wrap). FL rules keys: fl = statewide, flg = Gulf, fla = Atlantic (incl. Monroe). Other states: species list only + link.",
+ "_note": "Rules snapshot 2026-10-27 from myfwc.com (see fwc-regs-2026.md). Seasons: null = year-round, 'closed' = closed, list of [start,end] with YYYY-MM-DD (that year only) or MM-DD (every year, may wrap). FL rules keys: fl = statewide, flg = Gulf, fla = Atlantic (incl. Monroe). Other states: species list only + link. fedg/feds = federal waters (NOAA, snapshot 2026-10-28, reports/Федеральные правила NOAA 2026.md); fedg.states = per-state red snapper seasons that apply in federal waters off that state.",
  "regions": {
   "flg": {
    "name": "Florida Gulf",
@@ -72,6 +72,14 @@
   "HI": {
    "name": "Hawaii",
    "url": "https://dlnr.hawaii.gov/dar/fishing/fishing-regulations/"
+  },
+  "fedg": {
+   "name": "Gulf federal waters (NOAA)",
+   "url": "https://www.fisheries.noaa.gov/southeast/recreational-fishing/recreational-fishing-regulations-southeast"
+  },
+  "feds": {
+   "name": "South Atlantic federal waters (NOAA)",
+   "url": "https://safmc.net/regulations/"
   }
  },
  "groups": {
@@ -132,6 +140,43 @@
        "10-31"
       ]
      ]
+    },
+    "fedg": {
+     "size": "14\" FL",
+     "bag": "5",
+     "season": null,
+     "note": "North of 25°09'N; the Keys follow Atlantic rules"
+    },
+    "feds": {
+     "size": "16\" FL",
+     "bag": "1",
+     "season": [
+      [
+       "05-01",
+       "10-31"
+      ]
+     ],
+     "note": "Closed Nov–Apr off east Florida and the Keys",
+     "states": {
+      "GA": {
+       "size": "17\" FL",
+       "bag": "2",
+       "season": null,
+       "note": "Georgia to North Carolina"
+      },
+      "SC": {
+       "size": "17\" FL",
+       "bag": "2",
+       "season": null,
+       "note": "Georgia to North Carolina"
+      },
+      "NC": {
+       "size": "17\" FL",
+       "bag": "2",
+       "season": null,
+       "note": "Georgia to North Carolina"
+      }
+     }
     }
    },
    "img": "img/fish/hogfish.jpg",
@@ -164,14 +209,37 @@
     },
     "fla": {
      "size": "24\" TL",
-     "bag": "3 grouper total",
+     "bag": "1 gag or black (3 grouper total)",
      "season": [
       [
-       "05-01",
-       "12-31"
+       "2026-05-01",
+       "2026-08-01"
       ]
      ],
+     "note": "Federal 2026 season May 1–Aug 1; state waters follow it",
      "verify": true
+    },
+    "fedg": {
+     "size": "24\" TL",
+     "bag": "2 (4 grouper aggregate)",
+     "season": [
+      [
+       "2026-09-01",
+       "2026-09-30"
+      ]
+     ],
+     "note": "2026 federal season Sep 1 – 12:01 a.m"
+    },
+    "feds": {
+     "size": "24\" TL",
+     "bag": "1 gag or black (3 grouper total); 2 per vessel",
+     "season": [
+      [
+       "2026-05-01",
+       "2026-08-01"
+      ]
+     ],
+     "note": "2026 season May 1–Aug 1; 2 gag + black per vessel from Oct 28, 2026"
     }
    },
    "img": "img/fish/gag.jpg",
@@ -207,6 +275,23 @@
       ]
      ],
      "verify": true
+    },
+    "fedg": {
+     "size": "20\" TL",
+     "bag": "2 (4 grouper aggregate)",
+     "season": null,
+     "note": "Open year-round. The old Feb 1–Mar 31 recreational shallow-water-grouper closure beyond 20 fathoms was removed by Amendment 62, effective Oct 2, 2026 (FB26-058)"
+    },
+    "feds": {
+     "size": "20\" TL",
+     "bag": "3 grouper/tilefish aggregate",
+     "season": [
+      [
+       "05-01",
+       "12-31"
+      ]
+     ],
+     "note": "Closed Jan–Apr off FL and GA"
     }
    },
    "img": "img/fish/redgrouper.jpg",
@@ -242,6 +327,23 @@
       ]
      ],
      "verify": true
+    },
+    "fedg": {
+     "size": "24\" TL",
+     "bag": "4 grouper aggregate",
+     "season": null,
+     "note": "No separate per-species limit"
+    },
+    "feds": {
+     "size": "24\" TL",
+     "bag": "1 gag or black (3 grouper total); 2 per vessel",
+     "season": [
+      [
+       "05-01",
+       "12-31"
+      ]
+     ],
+     "note": "Closed Jan 1–Apr 30"
     }
    },
    "img": "img/fish/blackgrouper.jpg"
@@ -264,7 +366,7 @@
      "note": "Federal waters deeper than 20 fathoms closed Feb 1–Mar 31"
     },
     "fla": {
-     "size": "16\" TL",
+     "size": "20\" TL",
      "bag": "3 grouper total",
      "season": [
       [
@@ -272,7 +374,25 @@
        "12-31"
       ]
      ],
+     "note": "Closed Jan 1–Apr 30",
      "verify": true
+    },
+    "fedg": {
+     "size": "16\" TL",
+     "bag": "4 grouper aggregate",
+     "season": null,
+     "note": "Counts toward the 4-grouper aggregate"
+    },
+    "feds": {
+     "size": "20\" TL",
+     "bag": "1 (3 grouper total)",
+     "season": [
+      [
+       "05-01",
+       "12-31"
+      ]
+     ],
+     "note": "Closed Jan 1–Apr 30"
     }
    },
    "img": "img/fish/scamp.jpg"
@@ -294,6 +414,18 @@
      "bag": "Permit only",
      "season": "closed",
      "note": "May never be speared. Harvest only with an FWC permit tag."
+    },
+    "fedg": {
+     "size": "—",
+     "bag": "0",
+     "season": "closed",
+     "note": "Harvest/possession prohibited in Gulf federal waters"
+    },
+    "feds": {
+     "size": "—",
+     "bag": "0",
+     "season": "closed",
+     "note": "Retention prohibited in the South Atlantic EEZ"
     }
    },
    "img": "img/fish/goliath.jpg"
@@ -314,6 +446,18 @@
      "bag": "0",
      "season": "closed",
      "note": "Protected. No harvest, no spearing."
+    },
+    "fedg": {
+     "size": "—",
+     "bag": "0",
+     "season": "closed",
+     "note": "Harvest/possession prohibited in the Gulf EEZ (50 CFR 622.181(b)(4))"
+    },
+    "feds": {
+     "size": "—",
+     "bag": "0",
+     "season": "closed",
+     "note": "Retention prohibited in the South Atlantic EEZ"
     }
    },
    "img": "img/fish/nassau.jpg"
@@ -396,6 +540,81 @@
      "bag": "1",
      "season": "check",
      "note": "Atlantic opens only for the few days set each year by NOAA; check myfwc.com"
+    },
+    "fedg": {
+     "size": "16\" TL",
+     "bag": "2",
+     "season": "check",
+     "note": "Private-boat season is set by each Gulf state and applies in federal waters off that state",
+     "states": {
+      "AL": {
+       "size": "16\" TL",
+       "bag": "2",
+       "season": [
+        [
+         "2026-05-22",
+         "2026-12-31"
+        ]
+       ],
+       "note": "Opened May 22, 2026, 7 days/week 'until the end of the year or when Alabama's quota (664,552 lb) has been met'",
+       "verify": true
+      },
+      "MS": {
+       "size": "16\" TL",
+       "bag": "2",
+       "season": [
+        [
+         "2026-05-22",
+         "2026-07-05"
+        ],
+        [
+         "2026-09-04",
+         "2026-09-07"
+        ]
+       ],
+       "note": "Closed Jul 5; reopened Labor Day weekend Sep 4–7",
+       "verify": true
+      },
+      "LA": {
+       "size": "16\" TL",
+       "bag": "4",
+       "season": [
+        [
+         "2026-05-01",
+         "2026-08-09"
+        ],
+        [
+         "2026-08-27",
+         "2026-08-30"
+        ],
+        [
+         "2026-09-04",
+         "2026-09-07"
+        ]
+       ],
+       "note": "Closed Aug 9 (near the 882,439-lb allocation)",
+       "verify": false
+      },
+      "TX": {
+       "size": "16\" TL federal; 15\" TL state waters",
+       "bag": "4 federal (TX season) / 4 state",
+       "season": [
+        [
+         "2026-05-22",
+         "2026-12-31"
+        ]
+       ],
+       "note": "Federal waters off TX closed Jan 1–May 21, 2026 at TPWD request (FR 2025-23742), open from May 22",
+       "verify": true
+      }
+     }
+    },
+    "feds": {
+     "size": "none",
+     "bag": "1",
+     "season": "check",
+     "note": "2026: Oct 9–11 federal days; a December season may be announced",
+     "verify": true
     }
    },
    "img": "img/fish/redsnapper.jpg",
@@ -420,6 +639,17 @@
      "size": "10\" TL",
      "bag": "5 (10 snapper total)",
      "season": null
+    },
+    "fedg": {
+     "size": "12\" TL",
+     "bag": "10 snapper total",
+     "season": null,
+     "note": "Mangrove snapper; counts toward 10-snapper aggregate"
+    },
+    "feds": {
+     "size": "12\" TL",
+     "bag": "10 snapper aggregate",
+     "season": null
     }
    },
    "img": "img/fish/graysnapper.jpg"
@@ -440,6 +670,18 @@
      "bag": "20",
      "season": null,
      "note": "Not in the snapper aggregate since Apr 1, 2026"
+    },
+    "fedg": {
+     "size": "8\" TL",
+     "bag": "20 (reef fish total)",
+     "season": null,
+     "note": "Federal size is still 8\"; Florida state waters 10\"",
+     "verify": true
+    },
+    "feds": {
+     "size": "8\" TL",
+     "bag": "10 snapper aggregate",
+     "season": null
     }
    },
    "img": "img/fish/lane.jpg"
@@ -458,6 +700,16 @@
     "fl": {
      "size": "18\" TL",
      "bag": "5 (10 snapper total)",
+     "season": null
+    },
+    "fedg": {
+     "size": "18\" TL",
+     "bag": "5 (10 snapper total)",
+     "season": null
+    },
+    "feds": {
+     "size": "18\" TL",
+     "bag": "5 (within 10 snapper aggregate)",
      "season": null
     }
    },
@@ -478,6 +730,17 @@
      "size": "10\" TL",
      "bag": "10",
      "season": null
+    },
+    "fedg": {
+     "size": "10\" TL",
+     "bag": "10",
+     "season": null
+    },
+    "feds": {
+     "size": "12\" TL",
+     "bag": "5",
+     "season": null,
+     "note": "The former Nov–Mar recreational closure was removed"
     }
    },
    "img": "img/fish/vermilion.jpg"
@@ -498,6 +761,16 @@
      "bag": "10 snapper total",
      "season": null,
      "note": "Max 2 over 30\" per vessel"
+    },
+    "fedg": {
+     "size": "12\" TL",
+     "bag": "10 snapper total",
+     "season": null
+    },
+    "feds": {
+     "size": "12\" TL",
+     "bag": "10 snapper total; over 30\" max 2",
+     "season": null
     }
    },
    "img": "img/fish/cubera.jpg"
@@ -517,6 +790,17 @@
      "size": "12\" TL",
      "bag": "10 snapper total",
      "season": null
+    },
+    "fedg": {
+     "size": "12\" TL",
+     "bag": "10 snapper total",
+     "season": null
+    },
+    "feds": {
+     "size": "12\" TL",
+     "bag": "10 snapper aggregate",
+     "season": null,
+     "note": "NOAA landings page shows the Aug 1–Jul 31 fishing year"
     }
    },
    "img": "img/fish/yellowtail.jpg"
@@ -538,6 +822,12 @@
      "bag": "8",
      "season": null,
      "note": "Vessel limit 50 in Mar–Apr"
+    },
+    "fedg": {
+     "managed": false
+    },
+    "feds": {
+     "managed": false
     }
    },
    "img": "img/fish/sheepshead.jpg",
@@ -568,6 +858,12 @@
       ]
      ],
      "note": "Closed Oct 15–Nov 30"
+    },
+    "fedg": {
+     "managed": false
+    },
+    "feds": {
+     "managed": false
     }
    },
    "img": "img/fish/flounder.jpg"
@@ -602,6 +898,27 @@
      "size": "12\" FL",
      "bag": "10",
      "season": null
+    },
+    "fedg": {
+     "size": "15\" FL",
+     "bag": "1",
+     "season": [
+      [
+       "03-01",
+       "05-31"
+      ],
+      [
+       "08-01",
+       "12-31"
+      ]
+     ],
+     "note": "Recurring closures Jan 1–end Feb and Jun 1–Jul 31 (50 CFR 622.34)",
+     "verify": true
+    },
+    "feds": {
+     "size": "12\" FL",
+     "bag": "10",
+     "season": null
     }
    },
    "img": "img/fish/triggerfish.jpg"
@@ -630,8 +947,44 @@
     "fla": {
      "size": "28\" FL",
      "bag": "1",
-     "season": null,
+     "season": [
+      [
+       "01-01",
+       "03-31"
+      ],
+      [
+       "05-01",
+       "12-31"
+      ]
+     ],
+     "note": "Closed April",
      "verify": true
+    },
+    "fedg": {
+     "size": "34\" FL",
+     "bag": "1",
+     "season": [
+      [
+       "2026-09-01",
+       "2026-10-13"
+      ]
+     ],
+     "note": "2026 season Sep 1 – 12:01 a.m"
+    },
+    "feds": {
+     "size": "28\" FL",
+     "bag": "1",
+     "season": [
+      [
+       "01-01",
+       "03-31"
+      ],
+      [
+       "05-01",
+       "12-31"
+      ]
+     ],
+     "note": "Closed April"
     }
    },
    "img": "img/fish/amberjack.jpg",
@@ -657,6 +1010,18 @@
      "size": "36\" FL",
      "bag": "1 (2 per vessel)",
      "season": null
+    },
+    "fedg": {
+     "size": "36\" FL",
+     "bag": "1 (2 per vessel)",
+     "season": null,
+     "note": "Gulf migratory group (Gulf zone and Florida east coast zone)"
+    },
+    "feds": {
+     "size": "36\" FL",
+     "bag": "1 (2 per vessel)",
+     "season": null,
+     "note": "Off Florida east coast; off GA–NC state rules apply"
     }
    },
    "img": "img/fish/cobia.jpg",
@@ -681,6 +1046,18 @@
      "size": "12\" FL",
      "bag": "15",
      "season": null
+    },
+    "fedg": {
+     "size": "12\" FL",
+     "bag": "15",
+     "season": null,
+     "note": "Gulf migratory group"
+    },
+    "feds": {
+     "size": "12\" FL",
+     "bag": "15",
+     "season": null,
+     "note": "Atlantic migratory group"
     }
    },
    "img": "img/fish/spanish.jpg",
@@ -710,6 +1087,18 @@
      "size": "24\" FL",
      "bag": "2",
      "season": null
+    },
+    "fedg": {
+     "size": "24\" FL",
+     "bag": "3",
+     "season": null,
+     "note": "Gulf migratory group"
+    },
+    "feds": {
+     "size": "24\" FL",
+     "bag": "3",
+     "season": null,
+     "note": "Atlantic migratory group"
     }
    },
    "img": "img/fish/king.jpg",
@@ -740,6 +1129,20 @@
      "size": "13\" TL",
      "bag": "7",
      "season": null
+    },
+    "fedg": {
+     "managed": false
+    },
+    "feds": {
+     "size": "13\" TL",
+     "bag": "7",
+     "season": [
+      [
+       "2026-04-01",
+       "2027-03-31"
+      ]
+     ],
+     "note": "Season Apr 1, 2026 – Mar 31, 2027"
     }
    },
    "img": "img/fish/seabass.jpg",
@@ -786,6 +1189,12 @@
      "bag": "Unlimited",
      "season": null,
      "note": "Invasive: take all you can. No license needed with a pole spear or sling"
+    },
+    "fedg": {
+     "managed": false
+    },
+    "feds": {
+     "managed": false
     }
    },
    "img": "img/fish/lionfish.jpg"
@@ -802,9 +1211,29 @@
    "rules": {
     "fla": {
      "size": "14\" TL",
-     "bag": "3",
-     "season": null,
+     "bag": "1",
+     "season": [
+      [
+       "05-01",
+       "06-30"
+      ]
+     ],
+     "note": "Open May 1–Jun 30 only (federal); verify for state waters",
      "verify": true
+    },
+    "fedg": {
+     "managed": false
+    },
+    "feds": {
+     "size": "14\" TL",
+     "bag": "1",
+     "season": [
+      [
+       "05-01",
+       "06-30"
+      ]
+     ],
+     "note": "Open May 1–Jun 30 only"
     }
    },
    "img": "img/fish/redporgy.jpg"
