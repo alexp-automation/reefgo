@@ -17,5 +17,7 @@ jobs:
           git config user.name "reefgo-bot"
           git config user.email "reefgo-bot@users.noreply.github.com"
           git add ndbc.json
-          git diff --cached --quiet || git commit -m "ndbc: $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push
+          git diff --cached --quiet && exit 0
+          git commit -m "ndbc: $(date -u +%Y-%m-%dT%H:%MZ)"
+          git pull --rebase
+          git push || (git pull --rebase && git push)
