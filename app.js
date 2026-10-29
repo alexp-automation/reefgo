@@ -379,7 +379,9 @@ function buildSat() { const tk = todayKey(); const bar = $('satbar'); bar.innerH
   const sens = row(t('Sensor'));
   GIBS.forEach(([n, id]) => { const b = document.createElement('button'); b.className = 'chip' + (id === S.sat.layer ? ' on' : '') + (S.sat.off && S.sat.off.has(id) ? ' off' : ''); b.textContent = n; b.title = S.sat.off && S.sat.off.has(id) ? t('No image here for this day') : ''; b.onclick = () => { S.sat.layer = id; buildSat(); applySat(); }; sens.appendChild(b); });
   const hint = document.createElement('div'); hint.className = 'sathint'; hint.textContent = t('True-color photo, one pass per sensor per day. Black or blank: no pass or clouds here. Try another sensor or day.'); bar.appendChild(hint); }
-function toggleSat(force) { S.sat.on = force == null ? !S.sat.on : force; $('satBtn').classList.toggle('on', S.sat.on); $('satbar').classList.toggle('on', S.sat.on); applySat(); }
+function toggleSat(force) { S.sat.on = force == null ? !S.sat.on : force; $('satBtn').classList.toggle('on', S.sat.on); $('satbar').classList.toggle('on', S.sat.on); applySat();
+  // first time the satellite layer is turned on: open the reading guide once, then it lives behind the ? chip
+  if (S.sat.on) { let seen = false; try { seen = localStorage.getItem('rg.sathelp') === '1'; } catch (e) {} if (!seen) { $('satHelp').classList.add('on'); try { localStorage.setItem('rg.sathelp', '1'); } catch (e) {} } } }
 $('satBtn').onclick = () => toggleSat();
 $('satHelpClose').onclick = () => $('satHelp').classList.remove('on'); $('satHelp').onclick = e => { if (e.target === $('satHelp')) $('satHelp').classList.remove('on'); };
 S.sat.date = addDays(todayKey(), -1); buildSat();
