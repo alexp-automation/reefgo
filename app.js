@@ -334,8 +334,15 @@ let view = { lat: 28.2, lon: -82.9, z: 9 }; try { view = JSON.parse(localStorage
 const map = L.map('map', { zoomControl: false, attributionControl: true }).setView([view.lat, view.lon], view.z);
 map.attributionControl.setPrefix('');
 L.control.zoom({ position: 'bottomright' }).addTo(map);
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 13, maxZoom: 18, attribution: 'Esri, GEBCO, NOAA' }).addTo(map);
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 13, maxZoom: 18, pane: 'overlayPane', opacity: .8, zIndex: 6 }).addTo(map);
+const oceanBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 13, maxZoom: 19, attribution: 'Esri, GEBCO, NOAA' });
+const oceanRef = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 13, maxZoom: 19, pane: 'overlayPane', opacity: .8, zIndex: 6 });
+const aerialBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 19, maxZoom: 19, attribution: 'Esri, Maxar, Earthstar' });
+const aerialRef = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 19, maxZoom: 19, pane: 'overlayPane', zIndex: 6 });
+S.base = 'map'; try { S.base = localStorage.getItem('rg.base') === 'sat' ? 'sat' : 'map'; } catch (e) {}
+function applyBase() { const sat = S.base === 'sat'; [oceanBase, oceanRef, aerialBase, aerialRef].forEach(l => map.removeLayer(l)); (sat ? aerialBase : oceanBase).addTo(map); (sat ? aerialRef : oceanRef).addTo(map); $('baseBtn').classList.toggle('on', sat); $('baseBtn').textContent = t(sat ? 'Map' : 'Satellite'); document.documentElement.classList.toggle('aerial', sat); }
+function setBase(b) { S.base = b; try { localStorage.setItem('rg.base', b); } catch (e) {} applyBase(); }
+map.setMaxZoom(19);
+map.whenReady(() => { applyBase(); $('baseBtn').onclick = () => setBase(S.base === 'sat' ? 'map' : 'sat'); });
 let satLayer = null, selMarker = null;
 const cluster = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 44, spiderfyOnMaxZoom: true, disableClusteringAtZoom: 13, showCoverageOnHover: false,
   iconCreateFunction: c => { let worst = -1; for (const m of c.getAllChildMarkers()) { const x = m.reef && m.reef.c; if (x === 0 || x === 1 || x === 2) worst = Math.max(worst, x); }
@@ -344,19 +351,22 @@ map.addLayer(cluster);
 const mkIcon = (c, sel, ramp) => L.divIcon({ className: '', html: `<div class="mk${ramp ? ' ramp' : ''} c${c == null ? 'x' : c}${sel ? ' sel' : ''}"></div>`, iconSize: [22, 22], iconAnchor: [11, 11] });
 const reefClass = r => r.c == null ? 'x' : r.c;
 const iconFor = (r, sel) => mkIcon(reefClass(r), sel, r.kind === 'ramp');
+const HOVER = matchMedia('(hover: hover)').matches; let armed = null, armT = null;
+function tapOpen(m, r) { if (HOVER || armed === r) { armed = null; m.closeTooltip(); openReef(r); return; }
+  if (armed && armed.m) armed.m.closeTooltip(); armed = r; m.openTooltip(); clearTimeout(armT); armT = setTimeout(() => { if (armed === r) { armed = null; m.closeTooltip(); } }, 5000); }
+function tip(name) { return `<b>${esc(name)}</b>${HOVER ? '' : `<small>${t('Tap again for details')}</small>`}`; }
 function loadReefs(list) {
-  S.reefs = list; const ms = list.map(r => { const m = L.marker([r.lat, r.lon], { icon: mkIcon('x', false) }); m.reef = r; m.bindTooltip(r.name || r.id, { direction: 'top', offset: [0, -10] }); m.on('click', () => openReef(r)); r.m = m; return m; });
+  S.reefs = list; const ms = list.map(r => { const m = L.marker([r.lat, r.lon], { icon: mkIcon('x', false) }); m.reef = r; m.bindTooltip(tip(r.name || r.id), { direction: 'top', offset: [0, -10], className: 'tip', interactive: true }); m.on('click', () => tapOpen(m, r)); m.on('tooltipopen', e => { e.tooltip.getElement().onclick = () => { armed = null; m.closeTooltip(); openReef(r); }; }); r.m = m; return m; });
   cluster.addLayers(ms);
 }
 // Boat ramps (OpenStreetMap, coastal, named, public): squares, colored by the same verdict as the reefs, shown from zoom 9 so the coast is not buried in them.
 const rampCluster = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 36, disableClusteringAtZoom: 11, showCoverageOnHover: false,
   iconCreateFunction: c => L.divIcon({ html: `<div>${c.getChildCount()}</div>`, className: 'marker-cluster ramps', iconSize: [30, 30] }) });
 function loadRamps(list) {
-  S.ramps = list; list.forEach(r => { r.kind = 'ramp'; const m = L.marker([r.lat, r.lon], { icon: mkIcon('x', false, true), zIndexOffset: -100 }); m.reef = r; m.bindTooltip(r.name, { direction: 'top', offset: [0, -10] }); m.on('click', () => openReef(r)); r.m = m; });
+  S.ramps = list; list.forEach(r => { r.kind = 'ramp'; const m = L.marker([r.lat, r.lon], { icon: mkIcon('x', false, true), zIndexOffset: -100 }); m.reef = r; m.bindTooltip(tip(r.name), { direction: 'top', offset: [0, -10], className: 'tip', interactive: true }); m.on('click', () => tapOpen(m, r)); m.on('tooltipopen', e => { e.tooltip.getElement().onclick = () => { armed = null; m.closeTooltip(); openReef(r); }; }); r.m = m; });
   rampCluster.addLayers(list.map(r => r.m)); syncRamps();
 }
-function placeLegend() { const a = $('area'); const h = a.hidden ? 0 : a.getBoundingClientRect().height + 8; $('legendMap').style.bottom = `calc(env(safe-area-inset-bottom, 0px) + ${14 + h}px)`; }
-function syncRamps() { const show = map.getZoom() >= 9; if (show && !map.hasLayer(rampCluster)) map.addLayer(rampCluster); else if (!show && map.hasLayer(rampCluster)) map.removeLayer(rampCluster); $('legendMap').hidden = !show || $('sheet').classList.contains('on'); placeLegend(); }
+function syncRamps() { const show = map.getZoom() >= 9; if (show && !map.hasLayer(rampCluster)) map.addLayer(rampCluster); else if (!show && map.hasLayer(rampCluster)) map.removeLayer(rampCluster); $('legendMap').hidden = !show || $('sheet').classList.contains('on'); }
 map.on('zoomend', syncRamps);
 // Per-cell forecasts: reefs in view are grouped into grid cells (size by zoom), one batched Open-Meteo request per 40 cells, each reef colored by its own cell for the selected day.
 function cellSize() { const z = map.getZoom(); return z >= 10 ? 0.25 : z >= 8 ? 0.5 : z >= 6 ? 1 : 2; }
@@ -415,7 +425,6 @@ async function updateArea() {
     const nx = nextWindow(fc, alerts); $('areaN').hidden = cls === 0; $('areaN').className = 'next ' + (nx ? 'n' + nx.cls : 'n2');
     if (cls !== 0) $('areaN').textContent = !nx ? t('No window in the next 7 days') : t(nx.cls === 0 ? 'Next window: {day} · {h}' : 'Best this week: {day} · {h}', { day: dayName(nx.key), h: headline(nx.v) });
     if (nx && nx.cls === 0) maybeNotify(nx, c);
-    placeLegend();
     $('areaS').textContent = t('{dir} {w} kt · seas {h} ft / {p} s · water {t}°F', { dir: dirTxt(s.dir), w: f0(s.windAvg), h: f1((s.wave || 0) * M2FT), p: f0(s.period), t: f0(F(s.sst)) }); }
   catch (e) { $('areaH').textContent = t('No forecast for this spot'); $('areaS').textContent = t('Move the map over coastal water'); }
 }
@@ -545,18 +554,19 @@ function renderReef(r, fc, zone, cwf, tst, td, alerts) {
     ${tides.length ? `<div class="card"><h3>${t('Tide · {st}', { st: esc(tst.n) })}</h3><div class="kv">${tides.map(x => `<span>${x.type} ${x.h}</span><b>${t('slack {w}', { w: x.slack })}</b>`).join('')}</div><p class="muted" style="margin:6px 0 0;font-size:12px">${t('Slack water is the easy window to launch and retrieve.')}</p></div>` : ''}
     <details><summary>${t('Hour by hour')}</summary><div class="d"><table><tr><th>${t('Hour')}</th><th>${t('Wind, US / EU model')}</th><th>${t('Gusts')}</th><th>${t('Seas')}</th></tr>${rows}</table><p class="muted" style="font-size:12px">${t('Knots. Two weather models, the American GFS and the European ECMWF; the worse one drives the verdict. Highlighted rows are your {win} window. Air {t}°F, rain {r}%.', { win: esc(winLabel(fc, key)), t: f0(F(s.tmax)), r: f0(s.rain) })}</p></div></details>
     ${z ? `<details><summary>${t('Official NWS forecast · {z}', { z: esc(zone.id) })}</summary><div class="d">${alerts && alerts.length ? alerts.map(a => `<p style="margin:0 0 8px;color:var(--no);font-weight:700">${esc(a.event)} · ${t('until {t}', { t: new Date(a.off).toLocaleString(S.lang, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) })}</p>`).join('') : z.sca ? `<p style="margin:0 0 8px;color:var(--no);font-weight:700">${esc(z.sca)}</p>` : ''}<pre class="cwf">${esc(per.length ? per.map(p => p.name + ': ' + p.text).join('\n\n') : t('This day is not yet in the NWS marine forecast.'))}</pre><p class="muted" style="font-size:12px">${esc(zone.name)}</p></div></details>` : ''}
-    <div class="row"><button class="btn" id="satGo">${t('Satellite view')}</button><a class="btn" target="_blank" rel="noopener" href="https://maps.apple.com/?ll=${r.lat},${r.lon}&q=${encodeURIComponent(r.name || 'Reef')}">${t('Open in Maps')}</a></div>
+    <div class="row">${ramp ? `<button class="btn" id="aerialGo">${t('Satellite view')}</button>` : `<button class="btn" id="satGo">${t('Water from space')}</button>`}<a class="btn" target="_blank" rel="noopener" href="https://maps.apple.com/?ll=${r.lat},${r.lon}&q=${encodeURIComponent(r.name || 'Reef')}">${t('Open in Maps')}</a></div>
     <p class="muted" style="font-size:11px;text-align:center;margin:0">${t('Forecast estimate. Conditions can differ on site. Not for navigation.')} ${r.lat.toFixed(4)}, ${r.lon.toFixed(4)}</p>`;
   $('xBtn').onclick = closeReef;
   el.querySelectorAll('[data-win]').forEach(b => b.onclick = () => { S.win = b.dataset.win; try { localStorage.setItem('rg.win', S.win); } catch (e) {} renderReef(r, fc, zone, cwf, tst, td, alerts); S.area = null; S.areaKey = ''; colorReefs(); });
   el.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { S.day = +b.dataset.day; renderReef(r, fc, zone, cwf, tst, td, alerts); S.area = null; S.areaKey = ''; colorReefs(); });
   el.querySelectorAll('[data-reef]').forEach(b => b.onclick = () => { const x = S.reefs.find(y => y.id === b.dataset.reef); if (x) { map.setView([x.lat, x.lon], Math.max(map.getZoom(), 11)); openReef(x); } });
   const more = el.querySelector('[data-more]'); if (more) more.onclick = () => { el.querySelector('.fl.more').hidden = false; more.remove(); };
-  $('satGo').onclick = () => { closeReef(); map.setView([r.lat, r.lon], Math.max(map.getZoom(), 9)); toggleSat(true); };
+  if ($('satGo')) $('satGo').onclick = () => { closeReef(); map.setView([r.lat, r.lon], Math.max(map.getZoom(), 9)); toggleSat(true); };
+  if ($('aerialGo')) $('aerialGo').onclick = () => { closeReef(); setBase('sat'); map.setView([r.lat, r.lon], 17); };
 }
 function closeReef() { $('sheet').classList.remove('on'); syncRamps(); if (S.reef && S.reef.m) S.reef.m.setIcon(iconFor(S.reef, false)); S.reef = null; updateArea(); }
 $('grip').onclick = closeReef;
-map.on('click', () => { if ($('sheet').classList.contains('on')) closeReef(); });
+map.on('click', () => { if (armed && armed.m) { armed.m.closeTooltip(); armed = null; } if ($('sheet').classList.contains('on')) closeReef(); });
 
 // ---------- next window + alerts ----------
 // best day ahead: first green day, else the first yellow; cls tells which

@@ -70,15 +70,19 @@ input{font:inherit}
 .chip.on{background:var(--fg);color:var(--bg)}.chip.off{opacity:.4;text-decoration:line-through}
 
 /* area verdict (floating, top of sheet) */
-.area{position:absolute;z-index:1000;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 14px);background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:12px 14px;display:flex;align-items:center;gap:12px}
+.bottom{position:absolute;z-index:1000;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 14px);display:flex;flex-direction:column;align-items:flex-start;gap:8px;pointer-events:none}.bottom>*{pointer-events:auto}
+.area{width:100%;background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:12px 14px;display:flex;align-items:center;gap:12px}
 .area .v{width:14px;height:14px;border-radius:50%;flex:none;background:var(--line)}
 .area .v.c0{background:var(--ok)}.area .v.c1{background:var(--mid)}.area .v.c2{background:var(--no)}
 .area .t{flex:1;min-width:0}.area b{display:block;font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .area span{display:block;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .area small{color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 .area[hidden]{display:none}
-.legendmap{position:absolute;z-index:1000;left:max(12px,env(safe-area-inset-left,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 96px);display:flex;gap:10px;background:var(--card);border-radius:999px;padding:5px 10px;box-shadow:var(--shadow);font-size:11px;font-weight:700;color:var(--muted)}
+.legendmap{display:flex;gap:10px;background:var(--card);border-radius:999px;padding:5px 10px;box-shadow:var(--shadow);font-size:11px;font-weight:700;color:var(--muted)}
 .legendmap span{display:flex;align-items:center;gap:5px}.legendmap .mk{width:12px;height:12px;border-width:2px;box-shadow:none}.legendmap em{font-style:normal}.legendmap[hidden]{display:none}
+.basebtn{position:absolute;z-index:1000;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 92px);background:var(--card);color:var(--fg);border-radius:999px;padding:7px 12px;font-size:12px;font-weight:800;box-shadow:var(--shadow)}.basebtn.on{background:var(--fg);color:var(--bg)}
+.leaflet-tooltip.tip{background:var(--card);color:var(--fg);border:0;border-radius:12px;box-shadow:var(--shadow);padding:7px 11px;font:700 13px/1.2 var(--font);cursor:pointer}.leaflet-tooltip.tip small{display:block;font-size:10px;font-weight:700;color:var(--muted);margin-top:2px}.leaflet-tooltip-top.tip::before{border-top-color:var(--card)}
+:root.aerial .leaflet-control-attribution{background:rgba(0,0,0,.4);color:#fff}
 .hero.ramphead{background:var(--card)}.hero.ramphead h1{color:var(--fg);font-size:26px}.hero.ramphead .lead{color:var(--muted)}.hero.ramphead .facts div{background:var(--accent-soft)}
 .area .next{color:var(--ok);font-weight:700;white-space:normal}.area .next.n1{color:var(--mid)}.area .next.n2{color:var(--muted);font-weight:600}.area .next[hidden]{display:none}
 .modal p.warn{color:var(--mid);font-weight:600}input:disabled{opacity:.35}
@@ -229,14 +233,15 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
   <button class="brand" id="brand" aria-label="Home">Reef<span>Go</span></button>
   <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" placeholder="Reef, city or state" autocomplete="off" aria-label="Search" data-i18n-attr="placeholder|Reef, city or state"></label>
   <button class="iconbtn" id="locBtn" aria-label="My location" data-i18n-attr="aria-label|My location"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg></button>
-  <button class="iconbtn" id="satBtn" aria-label="Satellite" data-i18n-attr="aria-label|Satellite"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 18 0 9 9 0 0 1-18 0z"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></button>
+  <button class="iconbtn" id="satBtn" aria-label="Water from space" data-i18n-attr="aria-label|Water from space"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 18 0 9 9 0 0 1-18 0z"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></button>
   <button class="iconbtn" id="setBtn" aria-label="Settings" data-i18n-attr="aria-label|Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
 </div>
 <div class="sug" id="sug"></div>
 <div class="satbar" id="satbar"></div>
 
-<div class="legendmap" id="legendMap" hidden><span><i class="mk cx"></i><em data-i18n>Reef or wreck</em></span><span><i class="mk ramp cx"></i><em data-i18n>Boat ramp</em></span></div>
-<div class="area" id="area" hidden><i class="v" id="areaDot"></i><div class="t"><small id="areaLbl" data-i18n>Conditions here · today</small><b id="areaH" data-i18n>Loading…</b><span id="areaS"></span><span id="areaN" class="next" hidden></span></div></div>
+<div class="bottom"><div class="legendmap" id="legendMap" hidden><span><i class="mk cx"></i><em data-i18n>Reef or wreck</em></span><span><i class="mk ramp cx"></i><em data-i18n>Boat ramp</em></span></div>
+<div class="area" id="area" hidden><i class="v" id="areaDot"></i><div class="t"><small id="areaLbl" data-i18n>Conditions here · today</small><b id="areaH" data-i18n>Loading…</b><span id="areaS"></span><span id="areaN" class="next" hidden></span></div></div></div>
+<button class="basebtn" id="baseBtn" aria-label="Map type">Satellite</button>
 
 <div class="sheet" id="sheet"><div class="grip" id="grip"></div><div class="in" id="sheetIn"></div></div>
 
@@ -336,7 +341,7 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
-<script src="i18n.js?v=34"></script>
-<script src="app.js?v=34"></script>
+<script src="i18n.js?v=35"></script>
+<script src="app.js?v=35"></script>
 </body>
 </html>
