@@ -77,6 +77,9 @@ input{font:inherit}
 .area span{display:block;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .area small{color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 .area[hidden]{display:none}
+.legendmap{position:absolute;z-index:1000;left:max(12px,env(safe-area-inset-left,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 96px);display:flex;gap:10px;background:var(--card);border-radius:999px;padding:5px 10px;box-shadow:var(--shadow);font-size:11px;font-weight:700;color:var(--muted)}
+.legendmap span{display:flex;align-items:center;gap:5px}.legendmap .mk{width:12px;height:12px;border-width:2px;box-shadow:none}.legendmap em{font-style:normal}.legendmap[hidden]{display:none}
+.hero.ramphead{background:var(--card)}.hero.ramphead h1{color:var(--fg);font-size:26px}.hero.ramphead .lead{color:var(--muted)}.hero.ramphead .facts div{background:var(--accent-soft)}
 .area .next{color:var(--ok);font-weight:700;white-space:normal}.area .next.n1{color:var(--mid)}.area .next.n2{color:var(--muted);font-weight:600}.area .next[hidden]{display:none}
 .modal p.warn{color:var(--mid);font-weight:600}input:disabled{opacity:.35}
 
@@ -232,6 +235,7 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 <div class="sug" id="sug"></div>
 <div class="satbar" id="satbar"></div>
 
+<div class="legendmap" id="legendMap" hidden><span><i class="mk cx"></i><em data-i18n>Reef or wreck</em></span><span><i class="mk ramp cx"></i><em data-i18n>Boat ramp</em></span></div>
 <div class="area" id="area" hidden><i class="v" id="areaDot"></i><div class="t"><small id="areaLbl" data-i18n>Conditions here · today</small><b id="areaH" data-i18n>Loading…</b><span id="areaS"></span><span id="areaN" class="next" hidden></span></div></div>
 
 <div class="sheet" id="sheet"><div class="grip" id="grip"></div><div class="in" id="sheetIn"></div></div>
@@ -320,6 +324,8 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
     <div class="legend" data-i18n><i style="background:var(--ok)"></i>Green — yes</div>
     <div class="legend" data-i18n><i style="background:var(--mid)"></i>Yellow — only if you really want to</div>
     <div class="legend" data-i18n><i style="background:var(--no)"></i>Red — no</div>
+    <div class="legend" data-i18n><i class="mk cx" style="width:12px;height:12px;border-width:2px;box-shadow:none"></i>Round pin — reef or wreck</div>
+    <div class="legend" data-i18n><i class="mk ramp cx" style="width:12px;height:12px;border-width:2px;box-shadow:none"></i>Square pin — boat ramp (zoom in to see them)</div>
     <p class="muted" style="font-size:13px" data-i18n>Two separate answers: <b>Go</b> (can you get there and back) and <b>Fish</b> (can you sit on the reef at anchor: wind, gusts, seas and period) or <b>Dive</b> (can you safely be in the water: seas, period and clarity). Computed for the time window you pick on the reef card (morning by default; evening runs to sunset). Clarity recovers about two days after strong wind; the satellite card estimates it, the satellite layer shows it. Forecasts can be wrong — check on site. Not for navigation.</p>
     <p class="muted" style="font-size:13px"><a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)" data-i18n>Privacy policy</a><span data-i18n> · No account, no tracking, no ads. Your settings live on this phone.</span></p>
   <p class="muted" style="font-size:13px"><span data-i18n>ReefGo is made by <b>Gulf Road Apps</b>, a one-person shop on the Florida Gulf coast.</span> <a href="mailto:gulfandroadapps@gmail.com" style="color:var(--accent)">gulfandroadapps@gmail.com</a></p>
@@ -330,7 +336,7 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
-<script src="i18n.js?v=32"></script>
-<script src="app.js?v=32"></script>
+<script src="i18n.js?v=33"></script>
+<script src="app.js?v=33"></script>
 </body>
 </html>

@@ -355,7 +355,7 @@ function loadRamps(list) {
   S.ramps = list; list.forEach(r => { r.kind = 'ramp'; const m = L.marker([r.lat, r.lon], { icon: mkIcon('x', false, true), zIndexOffset: -100 }); m.reef = r; m.bindTooltip(r.name, { direction: 'top', offset: [0, -10] }); m.on('click', () => openReef(r)); r.m = m; });
   rampCluster.addLayers(list.map(r => r.m)); syncRamps();
 }
-function syncRamps() { const show = map.getZoom() >= 9; if (show && !map.hasLayer(rampCluster)) map.addLayer(rampCluster); else if (!show && map.hasLayer(rampCluster)) map.removeLayer(rampCluster); }
+function syncRamps() { const show = map.getZoom() >= 9; if (show && !map.hasLayer(rampCluster)) map.addLayer(rampCluster); else if (!show && map.hasLayer(rampCluster)) map.removeLayer(rampCluster); $('legendMap').hidden = !show || $('sheet').classList.contains('on'); }
 map.on('zoomend', syncRamps);
 // Per-cell forecasts: reefs in view are grouped into grid cells (size by zoom), one batched Open-Meteo request per 40 cells, each reef colored by its own cell for the selected day.
 function cellSize() { const z = map.getZoom(); return z >= 10 ? 0.25 : z >= 8 ? 0.5 : z >= 6 ? 1 : 2; }
@@ -482,7 +482,7 @@ function ctxFor(r, fc, z, alerts, key, s) { const i = S.days.indexOf(key); retur
 function weekHTML(r, fc, cl, z, alerts) { return `<div class="week">` + S.days.map((k, i) => { const s = dayStats(fc, k); const c = s ? overall(verdicts(s, i <= 1 ? cl : null, ctxFor(r, fc, z, alerts, k, s))) : null; return `<button class="${i === S.day ? 'sel' : ''}" data-day="${i}">${i === 0 ? t('Now') : t(DOW[dowOf(k)])}<em>${+k.slice(8)}</em><i class="${c == null ? '' : 'c' + c}"></i></button>`; }).join('') + '</div>'; }
 async function openReef(r) {
   if (S.reef && S.reef.m) S.reef.m.setIcon(iconFor(S.reef, false)); S.reef = r; r.m.setIcon(iconFor(r, true));
-  const sh = $('sheet'), el = $('sheetIn'); sh.classList.add('on'); $('area').hidden = true;
+  const sh = $('sheet'), el = $('sheetIn'); sh.classList.add('on'); $('area').hidden = true; $('legendMap').hidden = true;
   el.innerHTML = `<div class="hero"><div class="eyebrow">${esc(r.st)} · ${r.kind === 'ramp' ? t('Boat ramp') : esc(r.src)}</div><h1>${esc(r.name || r.id)}</h1><p class="lead muted">${t('Loading forecast…')}</p><button class="x" id="xBtn" aria-label="${t('Close')}">×</button></div>`;
   $('xBtn').onclick = closeReef;
   try {
@@ -501,12 +501,19 @@ function rampReefsHTML(r) {
   return `<div class="card"><h3>${t('Reefs from this ramp')}</h3><div class="kv">${list.map(y => `<span><button class="lnk" data-reef="${esc(y.x.id)}">${esc(y.x.name || y.x.id)}</button></span><b><i class="dot c${reefClass(y.x)}"></i>${f0(y.d)} nm${y.x.depth ? ' · ' + f0(y.x.depth) + ' ft' : ''}</b>`).join('')}</div><p class="muted" style="margin:6px 0 0;font-size:12px">${t('Straight-line distance from the ramp. Tap a reef for its own verdict.')}</p></div>`;
 }
 // what the ramp inventory knows: lanes, trailer parking, fee, restroom, water body, hours (FWC for Florida, OpenStreetMap elsewhere)
-function rampInfoHTML(r) {
-  const rows = [];
-  if (r.wb) rows.push([t('Water'), r.wb]); if (r.lanes) rows.push([t('Lanes'), r.lanes]); if (r.trl) rows.push([t('Trailer parking'), r.trl]);
-  rows.push([t('Fee'), r.fee ? t('Yes') : r.fee === 0 || r.src === 'FWC' ? t('No') : '—']); if (r.wc != null) rows.push([t('Restroom'), r.wc ? t('Yes') : t('No')]); if (r.hours) rows.push([t('Hours'), r.hours]);
+// Ramp sheet opens with the ramp itself: name, where, lanes / parking / fee / restroom, hours and water. The verdict card follows.
+function rampHeadHTML(r) {
   const who = [r.city, r.op].filter(Boolean).join(' · ');
-  return `<div class="card"><h3>${esc(r.name)}</h3>${who ? `<p style="margin:0 0 6px;font-size:14px">${esc(who)}</p>` : ''}<div class="kv">${rows.map(([k, v]) => `<span>${esc(k)}</span><b>${esc(v)}</b>`).join('')}</div><p class="muted" style="margin:6px 0 0;font-size:12px">${r.at ? t('Verdict for the waters off this ramp: forecast and NWS zone taken at {reef}, {d} nm out. ', { reef: esc(r.at.name || r.at.id), d: f0(nm(r, r.at)) }) : ''}${r.src === 'FWC' ? t('FWC Florida Boat Ramp Inventory. Conditions and fees change: check before you tow.') : t('OpenStreetMap. Details may be incomplete: check before you tow.')}</p></div>`;
+  const yn = v => v == null ? '—' : v ? t('Yes') : t('No');
+  const fee = r.fee ? t('Yes') : r.fee === 0 || r.src === 'FWC' ? t('No') : '—';
+  const tiles = [[r.lanes || '—', t('Lanes')], [r.trl || '—', t('Trailer parking')], [fee, t('Fee')], [yn(r.wc), t('Restroom')]];
+  const rows = []; if (r.hours) rows.push([t('Hours'), r.hours]); if (r.wb) rows.push([t('Water'), r.wb]);
+  const src = r.src === 'FWC' ? t('FWC Florida Boat Ramp Inventory. Conditions and fees change: check before you tow.') : r.src === 'OSM' ? t('OpenStreetMap. Details may be incomplete: check before you tow.') : t('{src} inventory. Conditions and fees change: check before you tow.', { src: r.src });
+  return `<div class="hero ramphead"><div class="eyebrow">${esc(r.st)} · ${t('Boat ramp')}${r.src ? ' · ' + esc(r.src) : ''}</div><h1>${esc(r.name)}</h1>${who ? `<p class="lead">${esc(who)}</p>` : ''}
+    <div class="facts">${tiles.map(([v, k]) => `<div><b>${esc(v)}</b><small>${esc(k)}</small></div>`).join('')}</div>
+    ${rows.length ? `<div class="kv" style="margin-top:10px">${rows.map(([k, v]) => `<span>${esc(k)}</span><b>${esc(v)}</b>`).join('')}</div>` : ''}
+    <p class="muted" style="margin:8px 0 0;font-size:12px">${src}</p>
+    <button class="x" id="xBtn" aria-label="${t('Close')}">×</button></div>`;
 }
 function renderReef(r, fc, zone, cwf, tst, td, alerts) {
   const key = S.days[S.day]; const s = dayStats(fc, key); const el = $('sheetIn'); const ramp = r.kind === 'ramp';
@@ -518,15 +525,16 @@ function renderReef(r, fc, zone, cwf, tst, td, alerts) {
   g.time.forEach((t, i) => { const hh = +t.slice(11, 13); if (!t.startsWith(key) || hh < 5 || hh > 21) return; const j = mi[t]; rows += `<tr class="${hh >= s.wa && hh <= s.wb ? 'inwin' : ''}"><td>${hh}:00</td><td>${f0(g.wind_speed_10m[i])} / ${f0(e.wind_speed_10m[i])} ${dirTxt(g.wind_direction_10m[i])}</td><td>${f0(Math.max(g.wind_gusts_10m[i] ?? 0, e.wind_gusts_10m[i] ?? 0))}</td><td>${j != null && m.wave_height[j] != null ? f1(m.wave_height[j] * M2FT) + ' ft / ' + f0(m.wave_period[j]) + ' s' : '—'}</td></tr>`; });
   const meta = [r.depth ? t('{d} ft deep', { d: f0(r.depth) }) : null, r.relief ? t('{r} ft relief', { r: f0(r.relief) }) : null, r.mat, r.date && !/^00/.test(r.date) ? t('deployed {d}', { d: r.date }) : null].filter(Boolean).join(' · ');
   el.innerHTML = `
-    <div class="hero v${hc}"><div class="eyebrow">${esc(r.st)} · ${ramp ? t('Boat ramp') + ' · ' : ''}${dayName(key)} · ${esc(winLabel(fc, key))}</div><h1>${headline(v)}</h1><p class="lead">${lead(s, v, z, fc)}</p>
+    ${ramp ? rampHeadHTML(r) : ''}
+    <div class="hero v${hc}"><div class="eyebrow">${ramp ? t('Conditions off this ramp') : esc(r.st)} · ${dayName(key)} · ${esc(winLabel(fc, key))}</div><h1>${headline(v)}</h1><p class="lead">${lead(s, v, z, fc)}${ramp && r.at ? ' ' + t('Forecast and NWS zone taken at {reef}, {d} nm out.', { reef: esc(r.at.name || r.at.id), d: f0(nm(r, r.at)) }) : ''}</p>
       ${v.back && v.ride < 2 ? `<p class="back">${esc(v.back.why)}</p>` : ''}
       <div class="two"><div><b>${t('Go')}</b><span class="t${v.ride}">${t(RIDE_TXT[v.ride])}</span></div><div><b>${secName()}</b><span class="t${v.dive}">${t(secTxt()[v.dive])}</span></div></div>
       <div class="facts"><div><b>${f0(s.windAvg)} kt</b><small>${t('wind {dir}', { dir: dirTxt(s.dir) })}</small></div><div><b>${f0(s.gust)} kt</b><small>${t('gusts')}</small></div><div><b>${f1((s.wave || 0) * M2FT)} ft</b><small>${t('seas · {p} s', { p: f0(s.period) })}</small></div><div><b>${f0(F(s.sst))}°</b><small>${t('water °F')}</small></div></div>
-      <button class="x" id="xBtn" aria-label="${t('Close')}">×</button></div>
+      ${ramp ? '' : `<button class="x" id="xBtn" aria-label="${t('Close')}">×</button>`}</div>
     ${weekHTML(r, fc, cl, z, alerts)}
     <div class="wins">${Object.entries(WIN).map(([k, w]) => `<button class="${k === S.win ? 'on' : ''}" data-win="${k}">${t(w[0])}</button>`).join('')}</div>
     ${v.why.length ? `<div class="card"><h3>${t('Why this verdict')}</h3><ul class="why">${v.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
-    ${ramp ? rampInfoHTML(r) + rampReefsHTML(r) : `<div class="card"><h3>${esc(r.name || r.id)}</h3><p style="margin:0;font-size:14px">${esc(r.desc || '')}${meta ? `<br><span class="muted">${esc(meta)}</span>` : ''}</p></div>`}
+    ${ramp ? rampReefsHTML(r) : `<div class="card"><h3>${esc(r.name || r.id)}</h3><p style="margin:0;font-size:14px">${esc(r.desc || '')}${meta ? `<br><span class="muted">${esc(meta)}</span>` : ''}</p></div>`}
     ${buoyHTML(r.lat, r.lon)}
     ${ramp || S.act === 'fish' ? '' : clarityHTML(r, fc)}
     ${ramp ? '' : biteHTML(r, fc, key, s, tst, td)}
@@ -544,7 +552,7 @@ function renderReef(r, fc, zone, cwf, tst, td, alerts) {
   const more = el.querySelector('[data-more]'); if (more) more.onclick = () => { el.querySelector('.fl.more').hidden = false; more.remove(); };
   $('satGo').onclick = () => { closeReef(); map.setView([r.lat, r.lon], Math.max(map.getZoom(), 9)); toggleSat(true); };
 }
-function closeReef() { $('sheet').classList.remove('on'); if (S.reef && S.reef.m) S.reef.m.setIcon(iconFor(S.reef, false)); S.reef = null; updateArea(); }
+function closeReef() { $('sheet').classList.remove('on'); syncRamps(); if (S.reef && S.reef.m) S.reef.m.setIcon(iconFor(S.reef, false)); S.reef = null; updateArea(); }
 $('grip').onclick = closeReef;
 map.on('click', () => { if ($('sheet').classList.contains('on')) closeReef(); });
 
