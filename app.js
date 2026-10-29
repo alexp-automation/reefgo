@@ -474,15 +474,27 @@ async function openReef(r) {
   el.innerHTML = `<div class="hero"><div class="eyebrow">${esc(r.st)} · ${r.kind === 'ramp' ? t('Boat ramp') : esc(r.src)}</div><h1>${esc(r.name || r.id)}</h1><p class="lead muted">${t('Loading forecast…')}</p><button class="x" id="xBtn" aria-label="${t('Close')}">×</button></div>`;
   $('xBtn').onclick = closeReef;
   try {
-    const [fc, zone, tst] = await Promise.all([forecastAt(r.lat, r.lon), zoneAt(r.lat, r.lon), Promise.resolve(nearestTide(r.lat, r.lon))]);
+    // a ramp sits on land: its verdict is for the waters off it, so the forecast and the NWS zone come from the nearest reef (within 25 nm), buoys and tide from the ramp itself
+    const p = r.kind === 'ramp' ? (nearestReef(r, 25) || r) : r; r.at = p === r ? null : p;
+    const [fc, zone, tst] = await Promise.all([forecastAt(p.lat, p.lon), zoneAt(p.lat, p.lon), Promise.resolve(nearestTide(r.lat, r.lon))]);
     const [cwf, td, alerts] = await Promise.all([zone ? cwfFor(zone.office) : null, tidesFor(tst), zone ? alertsFor(zone.id) : []]);
     if (S.reef !== r) return; renderReef(r, fc, zone, cwf, tst, td, alerts);
   } catch (e) { el.querySelector('.lead').textContent = t('Could not load the forecast. Check your connection.'); }
 }
-// reefs you can reach from a ramp: the closest ones within 25 nm, with the color they have on the map right now
+// reefs you can reach from a ramp: the closest ones within 25 nm (one per name, patch reefs share names), with the color they have on the map right now
+function reefsFrom(r, max) { const seen = {}; return S.reefs.map(x => ({ x, d: nm(r, x) })).filter(y => y.d <= max).sort((a, b) => a.d - b.d).filter(y => { const k = y.x.name || y.x.id; if (seen[k]) return false; seen[k] = 1; return true; }); }
+function nearestReef(r, max) { const l = reefsFrom(r, max); return l.length ? l[0].x : null; }
 function rampReefsHTML(r) {
-  const list = S.reefs.map(x => ({ x, d: nm(r, x) })).filter(y => y.d <= 25).sort((a, b) => a.d - b.d).slice(0, 6); if (!list.length) return '';
+  const list = reefsFrom(r, 25).slice(0, 6); if (!list.length) return '';
   return `<div class="card"><h3>${t('Reefs from this ramp')}</h3><div class="kv">${list.map(y => `<span><button class="lnk" data-reef="${esc(y.x.id)}">${esc(y.x.name || y.x.id)}</button></span><b><i class="dot c${reefClass(y.x)}"></i>${f0(y.d)} nm${y.x.depth ? ' · ' + f0(y.x.depth) + ' ft' : ''}</b>`).join('')}</div><p class="muted" style="margin:6px 0 0;font-size:12px">${t('Straight-line distance from the ramp. Tap a reef for its own verdict.')}</p></div>`;
+}
+// what the ramp inventory knows: lanes, trailer parking, fee, restroom, water body, hours (FWC for Florida, OpenStreetMap elsewhere)
+function rampInfoHTML(r) {
+  const rows = [];
+  if (r.wb) rows.push([t('Water'), r.wb]); if (r.lanes) rows.push([t('Lanes'), r.lanes]); if (r.trl) rows.push([t('Trailer parking'), r.trl]);
+  rows.push([t('Fee'), r.fee ? t('Yes') : r.src === 'FWC' ? t('No') : '—']); if (r.wc != null) rows.push([t('Restroom'), r.wc ? t('Yes') : t('No')]); if (r.hours) rows.push([t('Hours'), r.hours]);
+  const who = [r.city, r.op].filter(Boolean).join(' · ');
+  return `<div class="card"><h3>${esc(r.name)}</h3>${who ? `<p style="margin:0 0 6px;font-size:14px">${esc(who)}</p>` : ''}<div class="kv">${rows.map(([k, v]) => `<span>${esc(k)}</span><b>${esc(v)}</b>`).join('')}</div><p class="muted" style="margin:6px 0 0;font-size:12px">${r.at ? t('Verdict for the waters off this ramp: forecast and NWS zone taken at {reef}, {d} nm out. ', { reef: esc(r.at.name || r.at.id), d: f0(nm(r, r.at)) }) : ''}${r.src === 'FWC' ? t('FWC Florida Boat Ramp Inventory. Conditions and fees change: check before you tow.') : t('OpenStreetMap. Details may be incomplete: check before you tow.')}</p></div>`;
 }
 function renderReef(r, fc, zone, cwf, tst, td, alerts) {
   const key = S.days[S.day]; const s = dayStats(fc, key); const el = $('sheetIn'); const ramp = r.kind === 'ramp';
@@ -502,7 +514,7 @@ function renderReef(r, fc, zone, cwf, tst, td, alerts) {
     ${weekHTML(r, fc, cl, z, alerts)}
     <div class="wins">${Object.entries(WIN).map(([k, w]) => `<button class="${k === S.win ? 'on' : ''}" data-win="${k}">${t(w[0])}</button>`).join('')}</div>
     ${v.why.length ? `<div class="card"><h3>${t('Why this verdict')}</h3><ul class="why">${v.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
-    ${ramp ? rampReefsHTML(r) : `<div class="card"><h3>${esc(r.name || r.id)}</h3><p style="margin:0;font-size:14px">${esc(r.desc || '')}${meta ? `<br><span class="muted">${esc(meta)}</span>` : ''}</p></div>`}
+    ${ramp ? rampInfoHTML(r) + rampReefsHTML(r) : `<div class="card"><h3>${esc(r.name || r.id)}</h3><p style="margin:0;font-size:14px">${esc(r.desc || '')}${meta ? `<br><span class="muted">${esc(meta)}</span>` : ''}</p></div>`}
     ${buoyHTML(r.lat, r.lon)}
     ${ramp || S.act === 'fish' ? '' : clarityHTML(r, fc)}
     ${ramp ? '' : biteHTML(r, fc, key, s, tst, td)}

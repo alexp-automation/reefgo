@@ -53,6 +53,6 @@ for r in pts:
         r['nm'] = round(best[0] * 60, 1); n += 1  # degrees → nautical miles
         r['sb'] = round(math.degrees(math.atan2(best[1], best[2])) % 360)  # bearing to the nearest shore point
     else: r.pop('nm', None); r.pop('sb', None)
-    if maxnm is None or ('nm' in r and r['nm'] <= maxnm): out.append(r)
+    if maxnm is None or r.get('salt') or ('nm' in r and r['nm'] <= maxnm): out.append(r)  # salt=1: the source says it is on salt water, keep it even far up a bay
 json.dump(out, open(target, 'w'), ensure_ascii=False, separators=(',', ':'))
 print('done', n, 'points with distance,', len(out), 'kept', file=sys.stderr)
