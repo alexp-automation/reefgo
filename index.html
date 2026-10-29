@@ -220,7 +220,8 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
     <div class="dots"><i class="on"></i><i></i><i></i></div>
     <div class="eyebrow">Welcome to ReefGo</div>
     <h2>What do you ride?</h2>
-    <p>The “Go” verdict depends on your boat. A jet ski gets beaten up by seas a 26-footer barely notices. You can change this later in settings.</p>
+    <p>The “Go” verdict depends on your boat. A jet ski gets beaten up by seas a 26-footer barely notices.</p>
+    <p>ReefGo starts in <b>Fishing</b> mode and judges the anchor. Spearfishing or diving today? Switch in settings, any time, for the day’s plan.</p>
     <div class="seg" id="onbVessel"></div>
     <div class="spacer"></div>
     <div class="foot"><button class="cta" data-next="1">Continue</button></div>
@@ -250,6 +251,10 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 
 <div class="modal" id="settings">
   <div class="in">
+    <h2>What are you doing today?</h2>
+    <p class="muted">Switch any time. Fishing judges the anchor, spearfishing and diving judge the water.</p>
+    <div class="seg" id="act"></div>
+    <div id="solunarRow" hidden><label class="legend" style="gap:10px"><input type="checkbox" id="solunarOn" style="width:20px;height:20px;accent-color:var(--accent)"> Show solunar majors and minors</label><p class="muted" style="font-size:12px;margin-top:0">Moon tables. Unproven: a 2023 study found no link to catch rates. Off by default.</p></div>
     <h2>Your boat</h2>
     <p class="muted">Thresholds for the “Go” verdict depend on what you ride.</p>
     <div class="seg" id="vessel"></div>
@@ -263,7 +268,7 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
     <div class="legend"><i style="background:var(--ok)"></i>Green — yes</div>
     <div class="legend"><i style="background:var(--mid)"></i>Yellow — only if you really want to</div>
     <div class="legend"><i style="background:var(--no)"></i>Red — no</div>
-    <p class="muted" style="font-size:13px">Two separate answers: <b>Go</b> (can you get there and back) and <b>Dive</b> (can you safely be in the water: wave height, period and water clarity). Computed for the time window you pick on the reef card (morning by default; evening runs to sunset). Clarity recovers about two days after strong wind; the satellite card estimates it, the satellite layer shows it. Forecasts can be wrong — check on site. Not for navigation.</p>
+    <p class="muted" style="font-size:13px">Two separate answers: <b>Go</b> (can you get there and back) and <b>Fish</b> (can you sit on the reef at anchor: wind, gusts, seas and period) or <b>Dive</b> (can you safely be in the water: seas, period and clarity). Computed for the time window you pick on the reef card (morning by default; evening runs to sunset). Clarity recovers about two days after strong wind; the satellite card estimates it, the satellite layer shows it. Forecasts can be wrong — check on site. Not for navigation.</p>
     <p class="muted" style="font-size:13px"><a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)">Privacy policy</a> · No account, no tracking, no ads. Your settings live on this phone.</p>
     <p class="muted" style="font-size:12px">Data: NWS/NOAA marine zones, Open-Meteo (GFS + ECMWF), NOAA CO-OPS tides, NASA GIBS imagery, NOAA CoastWatch Kd490 water clarity, state reef programs (FWC, AL MRD, MS DMR, LDWF, TPWD, GA DNR, SCDNR, NC DMF, MARCO, CDFW, WA DNR, HI DAR, NOAA ENC), FWC fishing rules. Fish photos: Wikimedia Commons contributors (<a href="https://github.com/alexp-automation/reefgo/blob/main/data/fish-credits.json" target="_blank" rel="noopener" style="color:var(--accent)">credits</a>).</p>
     <div class="row" style="margin-top:8px"><button class="chip" id="setIntro" style="flex:1">Show intro again</button><button class="chip" id="setClose" style="flex:1;background:var(--fg);color:var(--bg)">Done</button></div>
@@ -272,6 +277,6 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
-<script src="app.js?v=20"></script>
+<script src="app.js?v=21"></script>
 </body>
 </html>

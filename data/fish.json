@@ -134,7 +134,12 @@
      ]
     }
    },
-   "img": "img/fish/hogfish.jpg"
+   "img": "img/fish/hogfish.jpg",
+   "temp": [
+    65,
+    82,
+    "active"
+   ]
   },
   {
    "id": "gag",
@@ -169,7 +174,12 @@
      "verify": true
     }
    },
-   "img": "img/fish/gag.jpg"
+   "img": "img/fish/gag.jpg",
+   "temp": [
+    60,
+    72,
+    "in close"
+   ]
   },
   {
    "id": "redgrouper",
@@ -199,7 +209,12 @@
      "verify": true
     }
    },
-   "img": "img/fish/redgrouper.jpg"
+   "img": "img/fish/redgrouper.jpg",
+   "temp": [
+    62,
+    80,
+    "on the bottom"
+   ]
   },
   {
    "id": "blackgrouper",
@@ -383,7 +398,12 @@
      "note": "Atlantic opens only for the few days set each year by NOAA; check myfwc.com"
     }
    },
-   "img": "img/fish/redsnapper.jpg"
+   "img": "img/fish/redsnapper.jpg",
+   "temp": [
+    64,
+    82,
+    "active"
+   ]
   },
   {
    "id": "graysnapper",
@@ -520,7 +540,12 @@
      "note": "Vessel limit 50 in Mar–Apr"
     }
    },
-   "img": "img/fish/sheepshead.jpg"
+   "img": "img/fish/sheepshead.jpg",
+   "temp": [
+    55,
+    70,
+    "on structure"
+   ]
   },
   {
    "id": "flounder",
@@ -609,7 +634,12 @@
      "verify": true
     }
    },
-   "img": "img/fish/amberjack.jpg"
+   "img": "img/fish/amberjack.jpg",
+   "temp": [
+    65,
+    80,
+    "on the wrecks"
+   ]
   },
   {
    "id": "cobia",
@@ -629,7 +659,12 @@
      "season": null
     }
    },
-   "img": "img/fish/cobia.jpg"
+   "img": "img/fish/cobia.jpg",
+   "temp": [
+    68,
+    72,
+    "passing through"
+   ]
   },
   {
    "id": "spanish",
@@ -648,7 +683,12 @@
      "season": null
     }
    },
-   "img": "img/fish/spanish.jpg"
+   "img": "img/fish/spanish.jpg",
+   "temp": [
+    68,
+    82,
+    "running"
+   ]
   },
   {
    "id": "king",
@@ -672,7 +712,12 @@
      "season": null
     }
    },
-   "img": "img/fish/king.jpg"
+   "img": "img/fish/king.jpg",
+   "temp": [
+    68,
+    82,
+    "running"
+   ]
   },
   {
    "id": "seabass",
@@ -697,7 +742,12 @@
      "season": null
     }
    },
-   "img": "img/fish/seabass.jpg"
+   "img": "img/fish/seabass.jpg",
+   "temp": [
+    50,
+    75,
+    "active"
+   ]
   },
   {
    "id": "barracuda",
@@ -769,7 +819,12 @@
    ],
    "minDepth": 0,
    "rules": {},
-   "img": "img/fish/tautog.jpg"
+   "img": "img/fish/tautog.jpg",
+   "temp": [
+    48,
+    68,
+    "on structure"
+   ]
   },
   {
    "id": "fluke",
@@ -853,7 +908,12 @@
    ],
    "minDepth": 0,
    "rules": {},
-   "img": "img/fish/cahalibut.jpg"
+   "img": "img/fish/cahalibut.jpg",
+   "temp": [
+    58,
+    72,
+    "in the sand"
+   ]
   },
   {
    "id": "whiteseabass",
@@ -865,7 +925,12 @@
    ],
    "minDepth": 0,
    "rules": {},
-   "img": "img/fish/whiteseabass.jpg"
+   "img": "img/fish/whiteseabass.jpg",
+   "temp": [
+    58,
+    68,
+    "in the kelp"
+   ]
   },
   {
    "id": "cayellowtail",
@@ -877,7 +942,12 @@
    ],
    "minDepth": 25,
    "rules": {},
-   "img": "img/fish/cayellowtail.jpg"
+   "img": "img/fish/cayellowtail.jpg",
+   "temp": [
+    64,
+    74,
+    "running"
+   ]
   },
   {
    "id": "whitefish",
@@ -902,7 +972,12 @@
    ],
    "minDepth": 0,
    "rules": {},
-   "img": "img/fish/lingcod.jpg"
+   "img": "img/fish/lingcod.jpg",
+   "temp": [
+    46,
+    58,
+    "active"
+   ]
   },
   {
    "id": "cabezon",

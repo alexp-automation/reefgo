@@ -4,6 +4,11 @@
 const M2FT = 3.28084, KM = 111.2;
 const RIDE_TXT = ['Go', 'Go if you must', 'No-go'];
 const DIVE_TXT = ['Dive', 'Only if you really want to', 'No dive'];
+const FISH_TXT = ['Fish', 'Choppy at anchor', 'Stay in'];
+// what you do on the reef: drives the second verdict and what the card leads with
+const ACT = { fish: 'Fishing', spear: 'Spearfishing', dive: 'Diving' };
+// fishing-at-anchor thresholds per vessel: [wind go, wind max, wave go ft, wave max ft] (research: small boat ≤10 kt / ≤2 ft / period ≥ 2× height)
+const FISH = { pwc: [8, 12, 1.5, 2], kayak: [7, 10, 1.2, 1.8], small: [10, 15, 2, 3], mid: [12, 17, 2.5, 3.5], big: [14, 20, 3, 4.5] };
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DOW_EN = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -17,8 +22,8 @@ const STATES = { FL: 'Florida', AL: 'Alabama', MS: 'Mississippi', LA: 'Louisiana
 if (/[?&]fresh\b/.test(location.search)) { try { Object.keys(localStorage).filter(k => k.startsWith('rg.')).forEach(k => localStorage.removeItem(k)); } catch (e) {} history.replaceState(null, '', location.pathname); }
 // Time windows for the verdict: [label, start hour, end hour]; end 'set' = sunset, start 'rise' = sunrise (from the forecast's daily data).
 const WIN = { am: ['Morning', 7, 12], mid: ['Midday', 11, 16], pm: ['Evening', 15, 'set'], day: ['All day', 'rise', 'set'] };
-const S = { reefs: [], tides: [], buoys: [], win: 'am', fish: null, kd: null, cells: {}, cellPending: {}, buoysAt: null, reef: null, day: 0, days: [], fc: {}, cwf: {}, zone: {}, tideCache: {}, area: null, areaKey: '', vessel: 'pwc', sat: { on: false, date: null, layer: GIBS[0][1] } };
-try { S.vessel = localStorage.getItem('rg.vessel') || 'pwc'; S.win = WIN[localStorage.getItem('rg.win')] ? localStorage.getItem('rg.win') : 'am'; } catch (e) {}
+const S = { reefs: [], tides: [], buoys: [], win: 'am', act: 'fish', solunar: false, fish: null, kd: null, cells: {}, cellPending: {}, buoysAt: null, reef: null, day: 0, days: [], fc: {}, cwf: {}, zone: {}, tideCache: {}, area: null, areaKey: '', vessel: 'pwc', sat: { on: false, date: null, layer: GIBS[0][1] } };
+try { S.vessel = localStorage.getItem('rg.vessel') || 'pwc'; S.win = WIN[localStorage.getItem('rg.win')] ? localStorage.getItem('rg.win') : 'am'; S.act = ACT[localStorage.getItem('rg.act')] ? localStorage.getItem('rg.act') : 'fish'; S.solunar = localStorage.getItem('rg.solunar') === '1'; } catch (e) {}
 const $ = id => document.getElementById(id);
 const f1 = x => x == null ? '—' : String(Math.round(x * 10) / 10);
 const f0 = x => x == null ? '—' : String(Math.round(x));
@@ -32,6 +37,8 @@ const dayLower = k => { const n = dayName(k); return /^(Today|Tomorrow)$/.test(n
 const dayName = k => { const i = S.days.indexOf(k); return i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : `${DOW[dowOf(k)]} ${MON[+k.slice(5, 7) - 1]} ${+k.slice(8)}`; };
 const nm = (a, b) => { const R = 3440.065, p = Math.PI / 180, dl = (b.lat - a.lat) * p, dn = (b.lon - a.lon) * p; const h = Math.sin(dl / 2) ** 2 + Math.cos(a.lat * p) * Math.cos(b.lat * p) * Math.sin(dn / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
 const overall = v => v.ride === 2 ? 2 : (v.ride === 0 && v.dive === 0 ? 0 : 1);
+const secTxt = () => S.act === 'fish' ? FISH_TXT : DIVE_TXT;
+const secName = () => S.act === 'fish' ? 'Fish' : 'Dive';
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // ---------- data ----------
@@ -39,7 +46,7 @@ async function getJSON(u, opt) { const r = await fetch(u, opt); if (!r.ok) throw
 const NWS = { headers: { 'Accept': 'application/geo+json' } };
 async function forecastAt(lat, lon) {
   const key = lat.toFixed(3) + ',' + lon.toFixed(3); if (S.fc[key]) return S.fc[key];
-  const H = 'wind_speed_10m,wind_gusts_10m,wind_direction_10m,temperature_2m,precipitation_probability';
+  const H = 'wind_speed_10m,wind_gusts_10m,wind_direction_10m,temperature_2m,precipitation_probability,pressure_msl';
   const base = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${H}&daily=sunrise,sunset&wind_speed_unit=kn&timezone=auto&past_days=7&forecast_days=7`;
   const [g, e, m] = await Promise.all([getJSON(base + '&models=gfs_seamless'), getJSON(base + '&models=ecmwf_ifs025').catch(() => null),
     getJSON(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=wave_height,wave_period,sea_surface_temperature&timezone=auto&past_days=1&forecast_days=7`).catch(() => null)]);
@@ -138,27 +145,44 @@ function dayStats(fc, key) {
   g.time.forEach((t, i) => { if (t < t7 && Math.max(g.wind_speed_10m[i] ?? 0, e.wind_speed_10m[i] ?? 0) > 15) last = t; });
   const since = last ? (new Date(t7) - new Date(last)) / 864e5 : 9;
   return { windAvg: avg(w), windMax: Math.max(...w), gust: Math.max(...gu), dir: g.wind_direction_10m[mid], wave: wv.length ? Math.max(...wv) : null, period: pe.length ? Math.min(...pe) : null,
-    wa, wb, sst: sst.length ? sst[0] : null, tmax: Math.max(...idx.map(i => g.temperature_2m[i])), rain: Math.max(...idx.map(i => g.precipitation_probability[i] ?? 0)), since, gAvg: avg(idx.map(i => g.wind_speed_10m[i] ?? 0)), eAvg: avg(idx.map(i => e.wind_speed_10m[i] ?? 0)) };
+    wa, wb, pres: g.pressure_msl ? g.pressure_msl[idx[0]] : null, pTrend: g.pressure_msl && idx[0] >= 6 ? g.pressure_msl[idx[0]] - g.pressure_msl[idx[0] - 6] : null, sst: sst.length ? sst[0] : null, tmax: Math.max(...idx.map(i => g.temperature_2m[i])), rain: Math.max(...idx.map(i => g.precipitation_probability[i] ?? 0)), since, gAvg: avg(idx.map(i => g.wind_speed_10m[i] ?? 0)), eAvg: avg(idx.map(i => e.wind_speed_10m[i] ?? 0)) };
 }
 function verdicts(s, cl) {
   const V = VESSELS[S.vessel]; let ride = 0, dive = 0; const why = [];
   const wf = s.wave != null ? s.wave * M2FT : 0, p = s.period ?? 9;
   if (s.windAvg > V[2]) { ride = 2; why.push(`Wind ${f0(s.windAvg)} kt is too much for a ${V[0].toLowerCase()}`); } else if (s.windAvg > V[1]) { ride = 1; why.push(`Wind ${f0(s.windAvg)} kt: on the edge`); }
   if (wf > V[4]) { ride = 2; why.push(`Seas ${f1(wf)} ft: hard to get there`); } else if (wf > V[3]) { ride = Math.max(ride, 1); why.push(`Seas ${f1(wf)} ft: rough ride`); } else if (wf > V[3] - 0.5 && p < 5) { ride = Math.max(ride, 1); why.push(`Seas ${f1(wf)} ft at a short ${f0(p)} s period: it will pound`); }
+  if (S.act === 'fish') { // fishing at anchor: comfort and holding, not visibility
+    const F = FISH[S.vessel];
+    if (s.windAvg > F[1]) { dive = 2; why.push(`Wind ${f0(s.windAvg)} kt: no holding at anchor on a ${VESSELS[S.vessel][0].toLowerCase()}`); } else if (s.windAvg > F[0]) { dive = 1; why.push(`Wind ${f0(s.windAvg)} kt: bumpy at anchor`); }
+    if (s.gust > F[1] + 5) { dive = 2; why.push(`Gusts to ${f0(s.gust)} kt`); } else if (s.gust > F[0] + 5) { dive = Math.max(dive, 1); }
+    if (wf > F[3]) { dive = 2; why.push(`Seas ${f1(wf)} ft: too much to sit on the reef`); }
+    else if (wf > F[2]) { if (p >= 6) { dive = Math.max(dive, 1); why.push(`Seas ${f1(wf)} ft at a long ${f0(p)} s period: rolly but fishable`); } else { dive = 2; why.push(`Seas ${f1(wf)} ft at a short ${f0(p)} s period: steep chop at anchor`); } }
+    else if (wf >= 1.5 && p < 2 * wf) { dive = Math.max(dive, 1); why.push(`Short chop (${f1(wf)} ft every ${f0(p)} s): expect a bumpy anchor and heavy sinkers`); }
+    if (s.rain > 60) { dive = Math.max(dive, 1); why.push(`Rain ${f0(s.rain)}%: squalls and lightning risk`); }
+    if (s.pTrend != null && s.pTrend < -3) why.push('Pressure falling: a front is coming, check the wind');
+  } else {
   if (s.windAvg > 15) dive = 2; else if (s.windAvg > 10) dive = 1;
   if (wf > 2.5) dive = 2; else if (wf > 2) { dive = Math.max(dive, 1); why.push('Seas over 2 ft hide the boat from a diver at the surface'); } else if (wf > 1.5 && p <= 4) { dive = Math.max(dive, 1); why.push('Short chop: hard to see the boat from the water'); }
   if (s.since < 2) { dive = Math.max(dive, 1); why.push(s.since < 1 ? 'Water is stirred up: strong wind less than a day ago' : `Water still clearing: strong wind ${f1(s.since)} days ago`); }
   if (cl && cl.hi < 10) { dive = Math.max(dive, 1); why.push(`Satellite saw murky water (about ${cl.lo}–${cl.hi} ft) ${cl.age <= 1 ? 'yesterday' : cl.age + ' days ago'}`); }
+  }
   if (s.windAvg < 8 && (S.win === 'am' || S.win === 'day')) why.push('Calm morning. Expect a sea breeze of 8–10 kt after 3 pm; be on the reef early');
   if (Math.abs(s.gAvg - s.eAvg) > 5) why.push(`Models disagree (GFS ${f0(s.gAvg)}, ECMWF ${f0(s.eAvg)} kt); the worse one is used`);
   return { ride, dive, why };
 }
-function headline(v) { if (v.ride === 2) return 'No-go'; if (v.ride === 1) return v.dive === 2 ? 'Go if you must, no dive' : 'Go if you must'; return v.dive === 0 ? 'Go and dive' : v.dive === 1 ? 'Go. Dive only if you really want to' : 'Go, but no dive'; }
+function headline(v) {
+  const fish = S.act === 'fish';
+  if (v.ride === 2) return 'No-go';
+  if (v.ride === 1) return v.dive === 2 ? (fish ? 'Go if you must, no fishing' : 'Go if you must, no dive') : 'Go if you must';
+  if (fish) return v.dive === 0 ? 'Go and fish' : v.dive === 1 ? 'Go. Choppy at anchor' : 'Go, but not to fish';
+  return v.dive === 0 ? 'Go and dive' : v.dive === 1 ? 'Go. Dive only if you really want to' : 'Go, but no dive';
+}
 function clearDay(fc) { let last = null; fc.g.time.forEach((t, i) => { if (Math.max(fc.g.wind_speed_10m[i] ?? 0, fc.e.wind_speed_10m[i] ?? 0) > 15) last = t; }); if (!last) return { clear: true }; const d = new Date(last); d.setDate(d.getDate() + 2); const k = d.toISOString().slice(0, 10); return { clear: k <= todayKey(), key: k, still: last >= todayKey() }; }
 function lead(s, v, z, fc) {
   let t = `${dirWord(s.dir)} wind ${f0(s.windAvg)} kt, seas ${f1((s.wave || 0) * M2FT)} ft every ${f0(s.period)} s.`;
   if (z && z.sca && S.day <= 1) t += ` ${z.sca.toLowerCase().replace(/(^|\s)(\w)/g, (a, b, c) => b + c.toUpperCase()).replace(/ (In|Effect|Through|Until|From|For|The|And|Of) /g, m => m.toLowerCase())}.`;
-  if (v.ride < 2 && v.dive > 0 && s.since < 2) { const cd = clearDay(fc); t += cd && !cd.clear ? ` Water should clear by ${dayLower(cd.key)}.` : ' Water is still murky.'; }
+  if (S.act !== 'fish' && v.ride < 2 && v.dive > 0 && s.since < 2) { const cd = clearDay(fc); t += cd && !cd.clear ? ` Water should clear by ${dayLower(cd.key)}.` : ' Water is still murky.'; }
   return t;
 }
 
@@ -190,14 +214,62 @@ function fishList(r, key) {
   return { reg, fl, list, url: S.fish.regions[reg].url, name: S.fish.regions[reg].name };
 }
 const PILL = { open: 'Open', closed: 'Closed', check: 'Check season', protected: 'Protected', rules: 'See rules' };
-function fishHTML(r, key) {
+function fishHTML(r, key, s) {
   if (!S.fish) return ''; const f = fishList(r, key); if (!f || !f.list.length) return '';
   const n = f.list.filter(x => x.st === 'open').length, c = f.list.filter(x => x.st === 'closed' || x.st === 'protected').length;
   const head = f.fl ? `${n} open ${dayName(key).toLowerCase()}, ${c} closed` : `${f.list.length} species · ${esc(f.name)} rules`;
   const row = x => `<div class="fr">${x.sp.img ? `<img src="${x.sp.img}" alt="" loading="lazy">` : '<i class="noimg"></i>'}<div class="ft"><b>${esc(x.sp.name)}</b><span>${x.rule ? esc([x.rule.size !== 'none' && x.rule.size !== '—' ? 'min ' + x.rule.size : null, 'bag ' + x.rule.bag].filter(Boolean).join(' · ')) : `<i>${esc(x.sp.sci)}</i>`}</span>${x.rule && x.rule.note ? `<small>${esc(x.rule.note)}${x.rule.verify ? ' · verify' : ''}</small>` : x.rule && x.rule.verify ? '<small>Verify on myfwc.com</small>' : ''}</div><em class="pill ${x.st}">${PILL[x.st]}</em></div>`;
   const first = f.list.slice(0, 7), rest = f.list.slice(7);
-  return `<div class="card fish"><h3>Fish here · ${head}</h3><div class="fl">${first.map(row).join('')}</div>${rest.length ? `<div class="fl more" hidden>${rest.map(row).join('')}</div><button class="link" data-more>Show ${rest.length} more</button>` : ''}
-    <p class="muted" style="margin:8px 0 0;font-size:12px">${f.fl ? 'Open: season open on this day in these waters, with the minimum size and daily bag. Closed: no harvest that day. Protected: never. ' + esc(S.fish.flNoSpear) + ' Snapshot of FWC rules; seasons change yearly. ' : `Size, bag and season limits are set by ${esc(f.name)}. `}<a href="${f.url}" target="_blank" rel="noopener">${f.fl ? 'FWC rules' : esc(f.name) + ' rules'}</a>. Species guessed from reef depth${r.depth ? ` (${f0(r.depth)} ft)` : ''}, not a survey.</p></div>`;
+  return `<div class="card fish"><h3>Fish here · ${head}</h3>${s ? tempHintHTML(r, s) : ''}<div class="fl">${first.map(row).join('')}</div>${rest.length ? `<div class="fl more" hidden>${rest.map(row).join('')}</div><button class="link" data-more>Show ${rest.length} more</button>` : ''}
+    <p class="muted" style="margin:8px 0 0;font-size:12px">${f.fl ? 'Open: season open on this day in these waters, with the minimum size and daily bag. Closed: no harvest that day. Protected: never. ' + (S.act === 'spear' ? esc(S.fish.flNoSpear) : '') + ' Snapshot of FWC rules; seasons change yearly. ' : `Size, bag and season limits are set by ${esc(f.name)}. `}<a href="${f.url}" target="_blank" rel="noopener">${f.fl ? 'FWC rules' : esc(f.name) + ' rules'}</a>. Species guessed from reef depth${r.depth ? ` (${f0(r.depth)} ft)` : ''}, not a survey.</p>${watersHTML(r, f)}</div>`;
+}
+
+// ---------- angler extras: best bite, moon, pressure, solunar ----------
+const hm = m => `${Math.floor(((m % 1440) + 1440) % 1440 / 60)}:${String(Math.round(m % 60)).padStart(2, '0')}`;
+function sunMin(fc, key) { if (!fc.d || !fc.d.time) return null; const i = fc.d.time.indexOf(key); if (i < 0 || !fc.d.sunrise[i]) return null; const m = t => +t.slice(11, 13) * 60 + +t.slice(14, 16); return [m(fc.d.sunrise[i]), m(fc.d.sunset[i])]; }
+// Best bite = the hour before and after a tide turn, best when it overlaps the hour around sunrise or sunset. Real CO-OPS turns and real sun, nothing invented.
+function bestBite(td, fc, key, wa, wb) {
+  const sun = sunMin(fc, key); const W0 = wa * 60, W1 = wb * 60 + 59;
+  const turns = td.filter(p => p.t.startsWith(key)).map(p => ({ m: +p.t.slice(11, 13) * 60 + +p.t.slice(14, 16), type: p.type === 'H' ? 'High' : 'Low' }));
+  const lights = sun ? [[sun[0] - 60, sun[0] + 60, 'sunrise'], [sun[1] - 60, sun[1] + 60, 'sunset']] : [];
+  let best = null;
+  for (const t of turns) { const a = Math.max(t.m - 60, W0), b = Math.min(t.m + 60, W1); if (b - a < 30) continue;
+    const L = lights.find(l => a < l[1] && b > l[0]); const score = L ? 2 : 1;
+    if (!best || score > best.score) best = { score, a, b, why: L ? `tide turn + ${L[2]}` : `${t.type.toLowerCase()} tide ${hm(t.m)}` }; }
+  if (!best) for (const l of lights) { const a = Math.max(l[0], W0), b = Math.min(l[1], W1); if (b - a >= 30) { best = { score: 0, a, b, why: l[2] === 'sunrise' ? 'first light' : 'last light' }; break; } }
+  return best ? { from: hm(best.a), to: hm(best.b), why: best.why } : null;
+}
+function moonPhase(d) { const days = (d - Date.UTC(2000, 0, 6, 18, 14)) / 864e5; return ((days / 29.530588853) % 1 + 1) % 1; }
+function moonTxt(key) { const ph = moonPhase(new Date(key + 'T12:00:00Z')); const strong = ph < 0.08 || ph > 0.92 || Math.abs(ph - 0.5) < 0.08; const name = ph < 0.03 || ph > 0.97 ? 'new moon' : ph < 0.22 ? 'waxing crescent' : ph < 0.28 ? 'first quarter' : ph < 0.47 ? 'waxing gibbous' : ph < 0.53 ? 'full moon' : ph < 0.72 ? 'waning gibbous' : ph < 0.78 ? 'last quarter' : 'waning crescent'; return { ph, strong, name }; }
+function pressTxt(s) { if (s.pres == null) return ''; const inHg = (s.pres * 0.02953).toFixed(2); const tr = s.pTrend == null ? '' : s.pTrend < -2 ? ', falling' : s.pTrend > 2 ? ', rising' : ', steady'; return `${inHg} inHg${tr}`; }
+// Solunar (off by default, unproven): moon transit ≈ 12:00 + phase × 24 h local; majors = transit and anti-transit ± 1 h, minors = ± 6 h ± 30 min.
+function solunarTxt(key) { const ph = moonPhase(new Date(key + 'T12:00:00Z')); const tr = (12 * 60 + ph * 1440) % 1440; const w = (c, h) => `${hm(c - h)}–${hm(c + h)}`; return `Majors ${w(tr, 60)}, ${w(tr + 720, 60)} · minors ${w(tr + 360, 30)}, ${w(tr - 360, 30)}`; }
+function biteHTML(r, fc, key, s, tst, td) {
+  if (S.act !== 'fish') return '';
+  const bb = bestBite(td, fc, key, s.wa, s.wb); const mo = moonTxt(key); const sun = sunMin(fc, key);
+  const todayTides = td.filter(p => p.t.startsWith(key)); const now = key === todayKey() ? new Date().getHours() * 60 + new Date().getMinutes() : s.wa * 60;
+  const next = todayTides.map(p => ({ m: +p.t.slice(11, 13) * 60 + +p.t.slice(14, 16), type: p.type === 'H' ? 'High' : 'Low' })).find(p => p.m >= now);
+  const rows = [];
+  if (bb) rows.push(`<span>Best bite</span><b>${bb.from}–${bb.to} · ${esc(bb.why)}</b>`);
+  if (next) rows.push(`<span>Next tide</span><b>${next.type} ${hm(next.m)} → ${next.type === 'High' ? 'falling' : 'rising'}</b>`); else if (!tst) rows.push(`<span>Tide</span><b>no station within 80 nm</b>`);
+  if (sun) rows.push(`<span>Sun</span><b>${hm(sun[0])} · ${hm(sun[1])}</b>`);
+  rows.push(`<span>Moon</span><b>${esc(mo.name)}${mo.strong ? ' · strong tides' : ''}</b>`);
+  const pt = pressTxt(s); if (pt) rows.push(`<span>Pressure</span><b>${pt}</b>`);
+  const notes = []; if (mo.strong) notes.push('Big tides this week: stronger current, heavier sinkers, harder to hold at anchor.');
+  if (tst) notes.push(`Tide turn times are for ${esc(tst.n)}; offshore the current turns 30–60 min later.`);
+  if (S.solunar) notes.push(`Solunar (unproven): ${solunarTxt(key)}.`);
+  return `<div class="card"><h3>When to fish</h3><div class="kv">${rows.join('')}</div>${notes.length ? `<p class="muted" style="margin:6px 0 0;font-size:12px">${notes.join(' ')}</p>` : ''}</div>`;
+}
+// state vs federal waters by distance from shore: FL Gulf and TX 9 nm, everywhere else 3 nm
+function watersHTML(r, f) {
+  if (r.nm == null) return ''; const limit = (f && f.reg === 'flg') || r.st === 'TX' ? 9 : 3; const state = r.nm <= limit;
+  const gulf = f && S.fish.groups.gulf.includes(f.reg);
+  return `<p class="muted" style="margin:8px 0 0;font-size:12px">${f0(r.nm)} nm from shore: ${state ? `<b>state waters</b> (limit ${limit} nm), the rules above apply.` : `<b>federal waters</b> (state limit ${limit} nm): federal seasons and limits apply and differ from the state rules above. Check before you go.`}${gulf ? ' Reef fish in the Gulf: a descending device or venting tool must be on board.' : ''}</p>`;
+}
+function tempHintHTML(r, s) {
+  if (S.act !== 'fish' || s.sst == null || !S.fish) return ''; const f = fishList(r, S.days[S.day]); if (!f) return ''; const F = Math.round(s.sst * 9 / 5 + 32);
+  const hits = f.list.map(x => x.sp).filter(sp => sp.temp && F >= sp.temp[0] && F <= sp.temp[1]).slice(0, 4);
+  return hits.length ? `<p style="margin:0 0 6px;font-size:13px">Water ${F}°F: ${hits.map(sp => `${esc(sp.name.replace(/ \(.*\)/, ''))} ${esc(sp.temp[2])}`).join(', ')}.</p>` : '';
 }
 
 // ---------- map ----------
@@ -342,16 +414,18 @@ function renderReef(r, fc, zone, cwf, tst, td) {
   const meta = [r.depth ? `${f0(r.depth)} ft deep` : null, r.relief ? `${f0(r.relief)} ft relief` : null, r.mat, r.date && !/^00/.test(r.date) ? `deployed ${r.date}` : null].filter(Boolean).join(' · ');
   el.innerHTML = `
     <div class="hero v${hc}"><div class="eyebrow">${esc(r.st)} · ${dayName(key)} · ${esc(winLabel(fc, key))}</div><h1>${headline(v)}</h1><p class="lead">${lead(s, v, z, fc)}</p>
-      <div class="two"><div><b>Go</b><span class="t${v.ride}">${RIDE_TXT[v.ride]}</span></div><div><b>Dive</b><span class="t${v.dive}">${DIVE_TXT[v.dive]}</span></div></div>
+      <div class="two"><div><b>Go</b><span class="t${v.ride}">${RIDE_TXT[v.ride]}</span></div><div><b>${secName()}</b><span class="t${v.dive}">${secTxt()[v.dive]}</span></div></div>
       <div class="facts"><div><b>${f0(s.windAvg)} kt</b><small>wind ${dirTxt(s.dir)}</small></div><div><b>${f0(s.gust)} kt</b><small>gusts</small></div><div><b>${f1((s.wave || 0) * M2FT)} ft</b><small>seas · ${f0(s.period)} s</small></div><div><b>${f0(F(s.sst))}°</b><small>water °F</small></div></div>
       <button class="x" id="xBtn" aria-label="Close">×</button></div>
     ${weekHTML(fc, cl)}
     <div class="wins">${Object.entries(WIN).map(([k, w]) => `<button class="${k === S.win ? 'on' : ''}" data-win="${k}">${w[0]}</button>`).join('')}</div>
     <div class="card"><h3>${esc(r.name || r.id)}</h3><p style="margin:0;font-size:14px">${esc(r.desc || '')}${meta ? `<br><span class="muted">${esc(meta)}</span>` : ''}</p></div>
     ${buoyHTML(r.lat, r.lon)}
-    ${clarityHTML(r, fc)}
+    ${S.act === 'fish' ? '' : clarityHTML(r, fc)}
     ${v.why.length ? `<div class="card"><h3>Why this verdict</h3><ul class="why">${v.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
-    ${fishHTML(r, key)}
+    ${biteHTML(r, fc, key, s, tst, td)}
+    ${fishHTML(r, key, s)}
+    ${S.act === 'fish' ? clarityHTML(r, fc) : ''}
     ${tides.length ? `<div class="card"><h3>Tide · ${esc(tst.n)}</h3><div class="kv">${tides.map(t => `<span>${t.type} ${t.h}</span><b>slack ${t.slack}</b>`).join('')}</div><p class="muted" style="margin:6px 0 0;font-size:12px">Slack water is the easy window to launch and retrieve.</p></div>` : ''}
     <details><summary>Hour by hour</summary><div class="d"><table><tr><th>Hour</th><th>Wind, US / EU model</th><th>Gusts</th><th>Seas</th></tr>${rows}</table><p class="muted" style="font-size:12px">Knots. Two weather models, the American GFS and the European ECMWF; the worse one drives the verdict. Highlighted rows are your ${esc(winLabel(fc, key))} window. Air ${f0(F(s.tmax))}°F, rain ${f0(s.rain)}%.</p></div></details>
     ${z ? `<details><summary>Official NWS forecast · ${esc(zone.id)}</summary><div class="d">${z.sca ? `<p style="margin:0 0 8px;color:var(--no);font-weight:700">${esc(z.sca)}</p>` : ''}<pre class="cwf">${esc(per.length ? per.map(p => p.name + ': ' + p.text).join('\n\n') : 'This day is not yet in the NWS marine forecast.')}</pre><p class="muted" style="font-size:12px">${esc(zone.name)}</p></div></details>` : ''}
@@ -399,9 +473,13 @@ function applyTheme() { const t = S.theme === 'auto' ? (isNight() ? 'dark' : 'li
 function buildTheme() { const el = $('theme'); el.innerHTML = ''; Object.entries(THEMES).forEach(([k, n]) => { const b = document.createElement('button'); b.textContent = n; b.className = k === S.theme ? 'on' : ''; b.onclick = () => { S.theme = k; try { localStorage.setItem('rg.theme', k); } catch (e) {} buildTheme(); applyTheme(); }; el.appendChild(b); }); }
 applyTheme(); setInterval(applyTheme, 5 * 60e3); map.on('moveend', applyTheme);
 
+// activity profile
+function buildAct() { const el = $('act'); el.innerHTML = ''; Object.entries(ACT).forEach(([k, n]) => { const b = document.createElement('button'); b.textContent = n; b.className = k === S.act ? 'on' : ''; b.onclick = () => { S.act = k; try { localStorage.setItem('rg.act', k); } catch (e) {} buildAct(); S.area = null; S.areaKey = ''; closeReef(); colorReefs(); $('solunarRow').hidden = k !== 'fish'; }; el.appendChild(b); }); $('solunarRow').hidden = S.act !== 'fish';
+  const cb = $('solunarOn'); cb.checked = S.solunar; cb.onchange = () => { S.solunar = cb.checked; try { localStorage.setItem('rg.solunar', cb.checked ? '1' : '0'); } catch (e) {} }; }
+
 // settings
 function buildVessel() { const el = $('vessel'); el.innerHTML = ''; Object.entries(VESSELS).forEach(([k, v]) => { const b = document.createElement('button'); b.textContent = v[0]; b.className = k === S.vessel ? 'on' : ''; b.onclick = () => { S.vessel = k; try { localStorage.setItem('rg.vessel', k); } catch (e) {} buildVessel(); S.area = null; S.areaKey = ''; updateArea(); colorReefs(); }; el.appendChild(b); }); }
-$('setBtn').onclick = () => { buildVessel(); buildTheme(); buildNotify(); $('settings').classList.add('on'); };
+$('setBtn').onclick = () => { buildAct(); buildVessel(); buildTheme(); buildNotify(); $('settings').classList.add('on'); };
 $('setClose').onclick = () => $('settings').classList.remove('on');
 $('settings').onclick = e => { if (e.target === $('settings')) $('settings').classList.remove('on'); };
 
