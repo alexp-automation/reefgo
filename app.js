@@ -22,7 +22,7 @@ const STATES = { FL: 'Florida', AL: 'Alabama', MS: 'Mississippi', LA: 'Louisiana
 if (/[?&]fresh\b/.test(location.search)) { try { Object.keys(localStorage).filter(k => k.startsWith('rg.')).forEach(k => localStorage.removeItem(k)); } catch (e) {} history.replaceState(null, '', location.pathname); }
 // Time windows for the verdict: [label, start hour, end hour]; end 'set' = sunset, start 'rise' = sunrise (from the forecast's daily data).
 const WIN = { am: ['Morning', 7, 12], mid: ['Midday', 11, 16], pm: ['Evening', 15, 'set'], day: ['All day', 'rise', 'set'] };
-const S = { reefs: [], tides: [], buoys: [], win: 'am', act: 'fish', solunar: false, fish: null, kd: null, cells: {}, cellPending: {}, buoysAt: null, reef: null, day: 0, days: [], fc: {}, cwf: {}, zone: {}, tideCache: {}, area: null, areaKey: '', vessel: 'pwc', sat: { on: false, date: null, layer: GIBS[0][1] } };
+const S = { reefs: [], ramps: [], alerts: {}, tides: [], buoys: [], win: 'am', act: 'fish', solunar: false, fish: null, kd: null, cells: {}, cellPending: {}, buoysAt: null, reef: null, day: 0, days: [], fc: {}, cwf: {}, zone: {}, tideCache: {}, area: null, areaKey: '', vessel: 'pwc', sat: { on: false, date: null, layer: GIBS[0][1] } };
 try { S.vessel = localStorage.getItem('rg.vessel') || 'pwc'; S.win = WIN[localStorage.getItem('rg.win')] ? localStorage.getItem('rg.win') : 'am'; S.act = ACT[localStorage.getItem('rg.act')] ? localStorage.getItem('rg.act') : 'fish'; S.solunar = localStorage.getItem('rg.solunar') === '1'; } catch (e) {}
 // language: rg.lang, else the phone's language; English strings are the keys, see i18n.js
 S.lang = 'en'; try { const l = localStorage.getItem('rg.lang') || (navigator.language || 'en').slice(0, 2); S.lang = I18N[l] ? l : 'en'; } catch (e) {}
@@ -51,11 +51,26 @@ async function getJSON(u, opt) { const r = await fetch(u, opt); if (!r.ok) throw
 const NWS = { headers: { 'Accept': 'application/geo+json' } };
 async function forecastAt(lat, lon) {
   const key = lat.toFixed(3) + ',' + lon.toFixed(3); if (S.fc[key]) return S.fc[key];
-  const H = 'wind_speed_10m,wind_gusts_10m,wind_direction_10m,temperature_2m,precipitation_probability,pressure_msl';
+  const H = 'wind_speed_10m,wind_gusts_10m,wind_direction_10m,temperature_2m,precipitation_probability,pressure_msl,weather_code';
   const base = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${H}&daily=sunrise,sunset&wind_speed_unit=kn&timezone=auto&past_days=7&forecast_days=7`;
   const [g, e, m] = await Promise.all([getJSON(base + '&models=gfs_seamless'), getJSON(base + '&models=ecmwf_ifs025').catch(() => null),
     getJSON(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=wave_height,wave_period,sea_surface_temperature&timezone=auto&past_days=1&forecast_days=7`).catch(() => null)]);
-  return S.fc[key] = { g: g.hourly, e: e ? e.hourly : g.hourly, m: m ? m.hourly : { time: [], wave_height: [], wave_period: [], sea_surface_temperature: [] }, d: g.daily, tz: g.timezone };
+  return S.fc[key] = { g: g.hourly, e: e ? e.hourly : g.hourly, m: m ? m.hourly : { time: [], wave_height: [], wave_period: [], sea_surface_temperature: [] }, d: g.daily, tz: g.timezone, off: g.utc_offset_seconds || 0 };
+}
+// Active NWS alerts for a marine zone. A Small Craft Advisory (or worse) in force during your window is an automatic no-go, whatever the numbers say.
+const NOGO_ALERT = /small craft|gale|storm warning|hurricane|tropical storm|special marine|hazardous seas|freezing spray/i;
+async function alertsFor(zoneId) {
+  if (!zoneId) return []; if (S.alerts[zoneId] !== undefined) return S.alerts[zoneId];
+  try { const j = await getJSON(`https://api.weather.gov/alerts/active?zone=${zoneId}`, NWS);
+    return S.alerts[zoneId] = (j.features || []).map(f => f.properties || {}).filter(p => p.event).map(p => ({ event: p.event, on: Date.parse(p.onset || p.effective || p.sent) || 0, off: Date.parse(p.ends || p.expires), nogo: NOGO_ALERT.test(p.event) })).filter(a => a.off > 0); }
+  catch (e) { return S.alerts[zoneId] = null; }
+}
+const titleCase = s => s.toLowerCase().replace(/(^|\s)(\w)/g, (a, b, c) => b + c.toUpperCase()).replace(/ (In|Effect|Through|Until|From|For|The|And|Of) /g, m => m.toLowerCase());
+// The alert in force during the window on a day. alerts === null means the feed failed: fall back to the CWF headline for today only (fail closed, never silent).
+function alertOn(alerts, z, fc, key, wa, wb) {
+  if (alerts == null) return z && z.sca && key === todayKey() ? { event: titleCase(z.sca), nogo: /SMALL CRAFT|GALE|STORM|HURRICANE|MARINE/.test(z.sca) } : null;
+  const off = (fc.off || 0) * 1000; const a = Date.parse(`${key}T${String(wa).padStart(2, '0')}:00:00Z`) - off, b = Date.parse(`${key}T${String(wb).padStart(2, '0')}:59:00Z`) - off;
+  return alerts.filter(x => x.on <= b && x.off >= a).sort((p, q) => q.nogo - p.nogo)[0] || null;
 }
 async function zoneAt(lat, lon) {
   const key = lat.toFixed(2) + ',' + lon.toFixed(2); if (S.zone[key] !== undefined) return S.zone[key];
@@ -135,7 +150,18 @@ function winHours(fc, key) {
   if (fc.d && fc.d.time) { const i = fc.d.time.indexOf(key); if (i >= 0 && fc.d.sunrise[i]) { rise = +fc.d.sunrise[i].slice(11, 13); set = +fc.d.sunset[i].slice(11, 13) + (+fc.d.sunset[i].slice(14, 16) > 0 ? 1 : 0); } }
   const a = w[1] === 'rise' ? rise : w[1], b = w[2] === 'set' ? Math.max(set, a + 2) : w[2]; return [a, Math.min(b, 23)];
 }
-function winLabel(fc, key) { const [a, b] = winHours(fc, key); const h = x => x === 12 ? '12 pm' : x > 12 ? (x - 12) + ' pm' : x + ' am'; return `${t(WIN[S.win][0]).toLowerCase()} ${h(a)}–${h(b)}`; }
+const hr = x => x === 12 ? '12 pm' : x === 0 ? '12 am' : x > 12 ? (x - 12) + ' pm' : x + ' am';
+function winLabel(fc, key) { const [a, b] = winHours(fc, key); return `${t(WIN[S.win][0]).toLowerCase()} ${hr(a)}–${hr(b)}`; }
+// Be back by: the first hour after the window opens with thunderstorms (WMO code 95+), wind or gusts past the no-go limit, or rain ≥ 60%; be on the trailer an hour before it.
+function backBy(fc, key, wa, wb) {
+  const V = VESSELS[S.vessel]; const g = fc.g, e = fc.e; let hit = null;
+  g.time.forEach((tm, i) => { if (hit || !tm.startsWith(key)) return; const hh = +tm.slice(11, 13); if (hh < wa + 3 || hh > 20) return; // a deadline inside the first two hours is no trip at all: the verdict already says so
+    const wc = g.weather_code ? g.weather_code[i] ?? 0 : 0, w = Math.max(g.wind_speed_10m[i] ?? 0, e.wind_speed_10m[i] ?? 0), gu = Math.max(g.wind_gusts_10m[i] ?? 0, e.wind_gusts_10m[i] ?? 0), pr = g.precipitation_probability[i] ?? 0;
+    const r = wc >= 95 ? t('thunderstorms') : w > V[2] ? t('wind over {n} kt', { n: V[2] }) : gu > V[2] + 5 ? t('gusts to {g} kt', { g: f0(gu) }) : pr >= 60 ? t('rain {r}%', { r: f0(pr) }) : null;
+    if (r) hit = { hh, r }; });
+  if (!hit) return null; const by = hit.hh - 1;
+  return { h: by, late: hit.hh <= wb, why: t('Be back on the trailer by {t}: {r} from {t2}', { t: hr(by), r: hit.r, t2: hr(hit.hh) }) };
+}
 function dayStats(fc, key) {
   const [wa, wb] = winHours(fc, key);
   const idx = []; fc.g.time.forEach((t, i) => { const h = +t.slice(11, 13); if (t.startsWith(key) && h >= wa && h <= wb) idx.push(i); });
@@ -149,15 +175,28 @@ function dayStats(fc, key) {
   let last = null; const t7 = key + 'T' + String(wa).padStart(2, '0') + ':00';
   g.time.forEach((t, i) => { if (t < t7 && Math.max(g.wind_speed_10m[i] ?? 0, e.wind_speed_10m[i] ?? 0) > 15) last = t; });
   const since = last ? (new Date(t7) - new Date(last)) / 864e5 : 9;
+  // wave memory: hours between the last >15 kt hour and the window start; the sea needs ~6 h to lie down after the wind does
+  const sinceH = last ? since * 24 : null, roughUntil = last ? hr((+last.slice(11, 13) + 7) % 24) : null;
   return { windAvg: avg(w), windMax: Math.max(...w), gust: Math.max(...gu), dir: g.wind_direction_10m[mid], wave: wv.length ? Math.max(...wv) : null, period: pe.length ? Math.min(...pe) : null,
-    wa, wb, pres: g.pressure_msl ? g.pressure_msl[idx[0]] : null, pTrend: g.pressure_msl && idx[0] >= 6 ? g.pressure_msl[idx[0]] - g.pressure_msl[idx[0] - 6] : null, sst: sst.length ? sst[0] : null, tmax: Math.max(...idx.map(i => g.temperature_2m[i])), rain: Math.max(...idx.map(i => g.precipitation_probability[i] ?? 0)), since, gAvg: avg(idx.map(i => g.wind_speed_10m[i] ?? 0)), eAvg: avg(idx.map(i => e.wind_speed_10m[i] ?? 0)) };
+    wa, wb, sinceH, roughUntil, pres: g.pressure_msl ? g.pressure_msl[idx[0]] : null, pTrend: g.pressure_msl && idx[0] >= 6 ? g.pressure_msl[idx[0]] - g.pressure_msl[idx[0] - 6] : null, sst: sst.length ? sst[0] : null, tmax: Math.max(...idx.map(i => g.temperature_2m[i])), rain: Math.max(...idx.map(i => g.precipitation_probability[i] ?? 0)), since, gAvg: avg(idx.map(i => g.wind_speed_10m[i] ?? 0)), eAvg: avg(idx.map(i => e.wind_speed_10m[i] ?? 0)) };
 }
-function verdicts(s, cl) {
-  const V = VESSELS[S.vessel]; let ride = 0, dive = 0; const why = [];
+// x: context for the day — alert (NWS alert in force), sb (bearing to the nearest shore), buoy (nearest wave buoy now), back (be-back-by)
+function verdicts(s, cl, x) {
+  const V = VESSELS[S.vessel]; let ride = 0, dive = 0; const why = []; x = x || {};
   const wf = s.wave != null ? s.wave * M2FT : 0, p = s.period ?? 9;
-  const vn = t(V[0]).toLowerCase();
-  if (s.windAvg > V[2]) { ride = 2; why.push(t('Wind {w} kt is too much for a {v}', { w: f0(s.windAvg), v: vn })); } else if (s.windAvg > V[1]) { ride = 1; why.push(t('Wind {w} kt: on the edge', { w: f0(s.windAvg) })); }
-  if (wf > V[4]) { ride = 2; why.push(t('Seas {h} ft: hard to get there', { h: f1(wf) })); } else if (wf > V[3]) { ride = Math.max(ride, 1); why.push(t('Seas {h} ft: rough ride', { h: f1(wf) })); } else if (wf > V[3] - 0.5 && p < 5) { ride = Math.max(ride, 1); why.push(t('Seas {h} ft at a short {p} s period: it will pound', { h: f1(wf), p: f0(p) })); }
+  const vn = t(V[0]).toLowerCase(), dir = dirTxt(s.dir);
+  // every reason names the number and the limit it broke, so the verdict is checkable, not a black box
+  if (s.windAvg > V[2]) { ride = 2; why.push(t('Wind {w} kt from the {dir}, gusts {g}: over the {no} kt no-go limit for a {v}', { w: f0(s.windAvg), dir, g: f0(s.gust), no: V[2], v: vn })); }
+  else if (s.windAvg > V[1]) { ride = 1; why.push(t('Wind {w} kt from the {dir}: over the {lim} kt comfort limit for a {v}, no-go above {no}', { w: f0(s.windAvg), dir, lim: V[1], no: V[2], v: vn })); }
+  if (wf > V[4]) { ride = 2; why.push(t('Seas {h} ft every {p} s: over the {no} ft no-go limit for a {v}', { h: f1(wf), p: f0(p), no: V[4], v: vn })); }
+  else if (wf > V[3]) { ride = Math.max(ride, 1); why.push(t('Seas {h} ft every {p} s: over the {lim} ft comfort limit, no-go above {no} ft', { h: f1(wf), p: f0(p), lim: V[3], no: V[4] })); }
+  else if (wf > V[3] - 0.5 && p < 5) { ride = Math.max(ride, 1); why.push(t('Seas {h} ft at a short {p} s period: it will pound', { h: f1(wf), p: f0(p) })); }
+  // wind off the land is a headwind on the way home (sb = bearing from the reef to the nearest shore)
+  if (x.sb != null && s.dir != null && s.windAvg >= 8) { const d = Math.abs(((s.dir - x.sb) % 360 + 540) % 360 - 180);
+    if (d <= 60) why.push(t('Wind is blowing off the land: every knot of it is a headwind on the way home')); else if (d >= 120 && s.windAvg > V[1]) why.push(t('Onshore wind: a following sea on the way home, but chop builds near the coast')); }
+  // wave memory: the sea stays up for hours after the wind drops, so a calm forecast alone does not earn a green
+  if (s.sinceH != null && s.sinceH < 6 && s.windAvg <= V[1]) { ride = Math.max(ride, 1); why.push(t('Wind over 15 kt blew until {h} h before your window: the sea is still built up, expect rough water until about {t}', { h: f0(s.sinceH), t: s.roughUntil }));
+    if (x.buoy && x.buoy.wvht != null && x.buoy.wvht >= 2 && s.sinceH < 2) why.push(t('The buoy still reads {h} ft seas: the wind dropped less than 2 h ago', { h: f1(x.buoy.wvht) })); }
   if (S.act === 'fish') { // fishing at anchor: comfort and holding, not visibility
     const F = FISH[S.vessel];
     if (s.windAvg > F[1]) { dive = 2; why.push(t('Wind {w} kt: no holding at anchor on a {v}', { w: f0(s.windAvg), v: vn })); } else if (s.windAvg > F[0]) { dive = 1; why.push(t('Wind {w} kt: bumpy at anchor', { w: f0(s.windAvg) })); }
@@ -173,9 +212,11 @@ function verdicts(s, cl) {
   if (s.since < 2) { dive = Math.max(dive, 1); why.push(s.since < 1 ? t('Water is stirred up: strong wind less than a day ago') : t('Water still clearing: strong wind {d} days ago', { d: f1(s.since) })); }
   if (cl && cl.hi < 10) { dive = Math.max(dive, 1); why.push(t('Satellite saw murky water (about {lo}–{hi} ft) {when}', { lo: cl.lo, hi: cl.hi, when: agoTxt(Math.max(1, cl.age)) })); }
   }
-  if (s.windAvg < 8 && (S.win === 'am' || S.win === 'day')) why.push(t('Calm morning. Expect a sea breeze of 8–10 kt after 3 pm; be on the reef early'));
+  if (x.alert) { if (x.alert.nogo) { ride = 2; why.unshift(t('{a} is in effect for these waters: an automatic no-go, whatever the numbers say', { a: x.alert.event })); } else why.unshift(t('NWS alert: {a}', { a: x.alert.event })); }
+  if (x.back && ride < 2) why.push(x.back.why);
+  if (s.windAvg < 8 && (S.win === 'am' || S.win === 'day') && !(x.back && x.back.late)) why.push(t('Calm morning. Expect a sea breeze of 8–10 kt after 3 pm; be on the reef early'));
   if (Math.abs(s.gAvg - s.eAvg) > 5) why.push(t('Models disagree (GFS {g}, ECMWF {e} kt); the worse one is used', { g: f0(s.gAvg), e: f0(s.eAvg) }));
-  return { ride, dive, why };
+  return { ride, dive, why, alert: x.alert || null, back: x.back || null };
 }
 function headline(v) {
   const fish = S.act === 'fish';
@@ -187,7 +228,7 @@ function headline(v) {
 function clearDay(fc) { let last = null; fc.g.time.forEach((t, i) => { if (Math.max(fc.g.wind_speed_10m[i] ?? 0, fc.e.wind_speed_10m[i] ?? 0) > 15) last = t; }); if (!last) return { clear: true }; const d = new Date(last); d.setDate(d.getDate() + 2); const k = d.toISOString().slice(0, 10); return { clear: k <= todayKey(), key: k, still: last >= todayKey() }; }
 function lead(s, v, z, fc) {
   let txt = t('{dir} wind {w} kt, seas {h} ft every {p} s.', { dir: S.lang === 'en' ? dirWord(s.dir) : dirWord(s.dir).toLowerCase(), w: f0(s.windAvg), h: f1((s.wave || 0) * M2FT), p: f0(s.period) });
-  if (z && z.sca && S.day <= 1) txt += ` ${z.sca.toLowerCase().replace(/(^|\s)(\w)/g, (a, b, c) => b + c.toUpperCase()).replace(/ (In|Effect|Through|Until|From|For|The|And|Of) /g, m => m.toLowerCase())}.`;
+  if (v.alert) txt += ` ${v.alert.event}${v.alert.nogo ? t(' in effect: no-go.') : '.'}`; else if (z && z.sca && S.day === 0) txt += ` ${titleCase(z.sca)}.`;
   if (S.act !== 'fish' && v.ride < 2 && v.dive > 0 && s.since < 2) { const cd = clearDay(fc); txt += cd && !cd.clear ? t(' Water should clear by {day}.', { day: dayLower(cd.key) }) : t(' Water is still murky.'); }
   return txt;
 }
@@ -300,12 +341,22 @@ const cluster = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 4
   iconCreateFunction: c => { let worst = -1; for (const m of c.getAllChildMarkers()) { const x = m.reef && m.reef.c; if (x === 0 || x === 1 || x === 2) worst = Math.max(worst, x); }
     return L.divIcon({ html: `<div>${c.getChildCount()}</div>`, className: 'marker-cluster k' + (worst < 0 ? 'x' : worst), iconSize: [34, 34] }); } });
 map.addLayer(cluster);
-const mkIcon = (c, sel) => L.divIcon({ className: '', html: `<div class="mk c${c == null ? 'x' : c}${sel ? ' sel' : ''}"></div>`, iconSize: [22, 22], iconAnchor: [11, 11] });
+const mkIcon = (c, sel, ramp) => L.divIcon({ className: '', html: `<div class="mk${ramp ? ' ramp' : ''} c${c == null ? 'x' : c}${sel ? ' sel' : ''}"></div>`, iconSize: [22, 22], iconAnchor: [11, 11] });
 const reefClass = r => r.c == null ? 'x' : r.c;
+const iconFor = (r, sel) => mkIcon(reefClass(r), sel, r.kind === 'ramp');
 function loadReefs(list) {
   S.reefs = list; const ms = list.map(r => { const m = L.marker([r.lat, r.lon], { icon: mkIcon('x', false) }); m.reef = r; m.bindTooltip(r.name || r.id, { direction: 'top', offset: [0, -10] }); m.on('click', () => openReef(r)); r.m = m; return m; });
   cluster.addLayers(ms);
 }
+// Boat ramps (OpenStreetMap, coastal, named, public): squares, colored by the same verdict as the reefs, shown from zoom 9 so the coast is not buried in them.
+const rampCluster = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 36, disableClusteringAtZoom: 11, showCoverageOnHover: false,
+  iconCreateFunction: c => L.divIcon({ html: `<div>${c.getChildCount()}</div>`, className: 'marker-cluster ramps', iconSize: [30, 30] }) });
+function loadRamps(list) {
+  S.ramps = list; list.forEach(r => { r.kind = 'ramp'; const m = L.marker([r.lat, r.lon], { icon: mkIcon('x', false, true), zIndexOffset: -100 }); m.reef = r; m.bindTooltip(r.name, { direction: 'top', offset: [0, -10] }); m.on('click', () => openReef(r)); r.m = m; });
+  rampCluster.addLayers(list.map(r => r.m)); syncRamps();
+}
+function syncRamps() { const show = map.getZoom() >= 9; if (show && !map.hasLayer(rampCluster)) map.addLayer(rampCluster); else if (!show && map.hasLayer(rampCluster)) map.removeLayer(rampCluster); }
+map.on('zoomend', syncRamps);
 // Per-cell forecasts: reefs in view are grouped into grid cells (size by zoom), one batched Open-Meteo request per 40 cells, each reef colored by its own cell for the selected day.
 function cellSize() { const z = map.getZoom(); return z >= 10 ? 0.25 : z >= 8 ? 0.5 : z >= 6 ? 1 : 2; }
 async function fetchCells(cells) {
@@ -325,13 +376,14 @@ function paintCells(cells) {
   const kday = S.days[S.day];
   cells.forEach(c => { const fc = S.cells[c.key]; if (!fc) return; // still loading: keep the color from the coarser cell
     let cls = null; const st = dayStats(fc, kday); if (st) cls = overall(verdicts(st));
-    c.rs.forEach(r => { if (r.c !== cls) { r.c = cls; r.m.setIcon(mkIcon(cls, r === S.reef)); } }); });
+    c.rs.forEach(r => { if (r.c !== cls) { r.c = cls; r.m.setIcon(iconFor(r, r === S.reef)); } }); });
   cluster.refreshClusters();
 }
+// Map colors come from the forecast cells only: NWS alerts need a zone lookup per point, so they are applied on the point sheet and the "Conditions here" card, not to the pins.
 let colorGen = 0;
 async function colorReefs() {
   const size = cellSize(), b = map.getBounds().pad(.3), groups = {};
-  S.reefs.forEach(r => { if (!b.contains([r.lat, r.lon])) return; const k = `${size}:${Math.floor(r.lat / size)}:${Math.floor(r.lon / size)}`; (groups[k] || (groups[k] = { key: k, rs: [], lat: 0, lon: 0 })).rs.push(r); });
+  S.reefs.concat(map.getZoom() >= 9 ? S.ramps : []).forEach(r => { if (!b.contains([r.lat, r.lon])) return; const k = `${size}:${Math.floor(r.lat / size)}:${Math.floor(r.lon / size)}`; (groups[k] || (groups[k] = { key: k, rs: [], lat: 0, lon: 0 })).rs.push(r); });
   const cells = Object.values(groups); cells.forEach(c => { c.lat = c.rs.reduce((a, r) => a + r.lat, 0) / c.rs.length; c.lon = c.rs.reduce((a, r) => a + r.lon, 0) / c.rs.length; });
   paintCells(cells);
   const missing = cells.filter(c => !S.cells[c.key] && !S.cellPending[c.key]); if (!missing.length) return;
@@ -344,9 +396,10 @@ async function updateArea() {
   const z = map.getZoom(); if (z < 7) { $('area').hidden = true; return; }
   const c = map.getCenter(); const key = c.lat.toFixed(1) + ',' + c.lng.toFixed(1); if (key === S.areaKey && S.area) { $('area').hidden = false; return; }
   S.areaKey = key; $('area').hidden = false; $('areaH').textContent = t('Checking conditions…'); $('areaS').textContent = ''; $('areaDot').className = 'v';
-  try { const fc = await forecastAt(c.lat, c.lng); if (key !== S.areaKey) return; const kday = S.days[S.day]; const s = dayStats(fc, kday); const v = verdicts(s); const cls = overall(v);
-    S.area = { c: cls, s, v }; $('areaDot').className = 'v c' + cls; $('areaLbl').textContent = t('Conditions here · {day} · {win}', { day: dayLower(kday), win: t(WIN[S.win][0]).toLowerCase() }); $('areaH').textContent = headline(v);
-    const nx = nextWindow(fc); $('areaN').hidden = cls === 0; $('areaN').className = 'next ' + (nx ? 'n' + nx.cls : 'n2');
+  try { const [fc, zone] = await Promise.all([forecastAt(c.lat, c.lng), zoneAt(c.lat, c.lng)]); const alerts = zone ? await alertsFor(zone.id) : []; if (key !== S.areaKey) return;
+    const kday = S.days[S.day]; const s = dayStats(fc, kday); const v = verdicts(s, null, { alert: alertOn(alerts, null, fc, kday, s.wa, s.wb) }); const cls = overall(v);
+    S.area = { c: cls, s, v }; $('areaDot').className = 'v c' + cls; $('areaLbl').textContent = t('Conditions here · {day} · {win}', { day: dayLower(kday), win: t(WIN[S.win][0]).toLowerCase() }); $('areaH').textContent = v.alert && v.alert.nogo ? t('No-go · {a}', { a: v.alert.event }) : headline(v);
+    const nx = nextWindow(fc, alerts); $('areaN').hidden = cls === 0; $('areaN').className = 'next ' + (nx ? 'n' + nx.cls : 'n2');
     if (cls !== 0) $('areaN').textContent = !nx ? t('No window in the next 7 days') : t(nx.cls === 0 ? 'Next window: {day} · {h}' : 'Best this week: {day} · {h}', { day: dayName(nx.key), h: headline(nx.v) });
     if (nx && nx.cls === 0) maybeNotify(nx, c);
     $('areaS').textContent = t('{dir} {w} kt · seas {h} ft / {p} s · water {t}°F', { dir: dirTxt(s.dir), w: f0(s.windAvg), h: f1((s.wave || 0) * M2FT), p: f0(s.period), t: f0(F(s.sst)) }); }
@@ -406,64 +459,74 @@ q.oninput = () => { const t = q.value.trim().toLowerCase(); sug.innerHTML = ''; 
   Object.entries(STATES).forEach(([k, n]) => { if (n.toLowerCase().startsWith(t) || k.toLowerCase() === t) res.push({ n, s: t('state'), go: () => { const rs = S.reefs.filter(r => r.st === k); if (rs.length) map.fitBounds(L.latLngBounds(rs.map(r => [r.lat, r.lon])).pad(.1)); } }); });
   CITIES.forEach(([n, la, lo]) => { if (n.toLowerCase().includes(t)) res.push({ n, s: t('city'), go: () => map.setView([la, lo], 10) }); });
   S.reefs.forEach(r => { if (res.length < 12 && (r.name || '').toLowerCase().includes(t)) res.push({ n: r.name, s: r.st + (r.depth ? ` · ${f0(r.depth)} ft` : ''), go: () => { map.setView([r.lat, r.lon], 13); openReef(r); } }); });
+  S.ramps.forEach(r => { if (res.length < 14 && r.name.toLowerCase().includes(t)) res.push({ n: r.name, s: t('boat ramp') + ' · ' + r.st, go: () => { map.setView([r.lat, r.lon], 13); openReef(r); } }); });
   res.slice(0, 10).forEach(x => { const b = document.createElement('button'); b.innerHTML = `<b>${esc(x.n)}</b><span>${esc(x.s)}</span>`; b.onclick = () => { sug.classList.remove('on'); q.value = ''; q.blur(); x.go(); }; sug.appendChild(b); });
   sug.classList.toggle('on', res.length > 0); };
 q.onblur = () => setTimeout(() => sug.classList.remove('on'), 200);
 
 // ---------- reef sheet ----------
-function weekHTML(fc, cl) { return `<div class="week">` + S.days.map((k, i) => { const s = dayStats(fc, k); const c = s ? overall(verdicts(s, i <= 1 ? cl : null)) : null; return `<button class="${i === S.day ? 'sel' : ''}" data-day="${i}">${i === 0 ? t('Now') : t(DOW[dowOf(k)])}<em>${+k.slice(8)}</em><i class="${c == null ? '' : 'c' + c}"></i></button>`; }).join('') + '</div>'; }
+// per-day context for the verdict on a point: the alert in force, the shore bearing, the nearest wave buoy (today only), be-back-by
+function ctxFor(r, fc, z, alerts, key, s) { const i = S.days.indexOf(key); return { alert: alertOn(alerts, z, fc, key, s.wa, s.wb), sb: r.sb, buoy: i === 0 ? (nearestBuoys(r.lat, r.lon).wave || {}).b : null, back: backBy(fc, key, s.wa, s.wb) }; }
+function weekHTML(r, fc, cl, z, alerts) { return `<div class="week">` + S.days.map((k, i) => { const s = dayStats(fc, k); const c = s ? overall(verdicts(s, i <= 1 ? cl : null, ctxFor(r, fc, z, alerts, k, s))) : null; return `<button class="${i === S.day ? 'sel' : ''}" data-day="${i}">${i === 0 ? t('Now') : t(DOW[dowOf(k)])}<em>${+k.slice(8)}</em><i class="${c == null ? '' : 'c' + c}"></i></button>`; }).join('') + '</div>'; }
 async function openReef(r) {
-  if (S.reef && S.reef.m) S.reef.m.setIcon(mkIcon(reefClass(S.reef), false)); S.reef = r; r.m.setIcon(mkIcon(reefClass(r), true));
+  if (S.reef && S.reef.m) S.reef.m.setIcon(iconFor(S.reef, false)); S.reef = r; r.m.setIcon(iconFor(r, true));
   const sh = $('sheet'), el = $('sheetIn'); sh.classList.add('on'); $('area').hidden = true;
-  el.innerHTML = `<div class="hero"><div class="eyebrow">${esc(r.st)} · ${esc(r.src)}</div><h1>${esc(r.name || r.id)}</h1><p class="lead muted">${t('Loading forecast…')}</p><button class="x" id="xBtn" aria-label="${t('Close')}">×</button></div>`;
+  el.innerHTML = `<div class="hero"><div class="eyebrow">${esc(r.st)} · ${r.kind === 'ramp' ? t('Boat ramp') : esc(r.src)}</div><h1>${esc(r.name || r.id)}</h1><p class="lead muted">${t('Loading forecast…')}</p><button class="x" id="xBtn" aria-label="${t('Close')}">×</button></div>`;
   $('xBtn').onclick = closeReef;
   try {
     const [fc, zone, tst] = await Promise.all([forecastAt(r.lat, r.lon), zoneAt(r.lat, r.lon), Promise.resolve(nearestTide(r.lat, r.lon))]);
-    const [cwf, td] = await Promise.all([zone ? cwfFor(zone.office) : null, tidesFor(tst)]);
-    if (S.reef !== r) return; renderReef(r, fc, zone, cwf, tst, td);
+    const [cwf, td, alerts] = await Promise.all([zone ? cwfFor(zone.office) : null, tidesFor(tst), zone ? alertsFor(zone.id) : []]);
+    if (S.reef !== r) return; renderReef(r, fc, zone, cwf, tst, td, alerts);
   } catch (e) { el.querySelector('.lead').textContent = t('Could not load the forecast. Check your connection.'); }
 }
-function renderReef(r, fc, zone, cwf, tst, td) {
-  const key = S.days[S.day]; const s = dayStats(fc, key); const el = $('sheetIn');
+// reefs you can reach from a ramp: the closest ones within 25 nm, with the color they have on the map right now
+function rampReefsHTML(r) {
+  const list = S.reefs.map(x => ({ x, d: nm(r, x) })).filter(y => y.d <= 25).sort((a, b) => a.d - b.d).slice(0, 6); if (!list.length) return '';
+  return `<div class="card"><h3>${t('Reefs from this ramp')}</h3><div class="kv">${list.map(y => `<span><button class="lnk" data-reef="${esc(y.x.id)}">${esc(y.x.name || y.x.id)}</button></span><b><i class="dot c${reefClass(y.x)}"></i>${f0(y.d)} nm${y.x.depth ? ' · ' + f0(y.x.depth) + ' ft' : ''}</b>`).join('')}</div><p class="muted" style="margin:6px 0 0;font-size:12px">${t('Straight-line distance from the ramp. Tap a reef for its own verdict.')}</p></div>`;
+}
+function renderReef(r, fc, zone, cwf, tst, td, alerts) {
+  const key = S.days[S.day]; const s = dayStats(fc, key); const el = $('sheetIn'); const ramp = r.kind === 'ramp';
   if (!s) { el.innerHTML = `<div class="hero"><h1>${esc(r.name)}</h1><p class="lead">${t('No forecast for this day.')}</p><button class="x" id="xBtn">×</button></div>`; $('xBtn').onclick = closeReef; return; }
-  const cl = clarity(r); const v = verdicts(s, S.day <= 1 ? cl : null); const hc = overall(v); const z = zoneBlock(cwf, zone ? zone.id : ''); const dn = DOW_EN[dowOf(key)];
+  const z = zoneBlock(cwf, zone ? zone.id : ''); const cl = ramp ? null : clarity(r); const v = verdicts(s, S.day <= 1 ? cl : null, ctxFor(r, fc, z, alerts, key, s)); const hc = overall(v); const dn = DOW_EN[dowOf(key)];
   const per = z ? z.periods.filter(p => S.day === 0 ? /TODAY|THIS AFTERNOON|TONIGHT/.test(p.name) : p.name === dn || p.name === dn + ' NIGHT') : [];
   const tides = td.filter(p => p.t.startsWith(key)).map(p => { const [hh, mm] = p.t.slice(11, 16).split(':').map(Number); const w = x => `${String(((hh + x) + 24) % 24).padStart(2, '0')}:${String(mm).padStart(2, '0')}`; return { h: p.t.slice(11, 16), type: t(p.type === 'H' ? 'High' : 'Low'), slack: `${w(-1)}–${w(1)}` }; });
   const g = fc.g, e = fc.e, m = fc.m; const mi = {}; m.time.forEach((t, i) => mi[t] = i); let rows = '';
   g.time.forEach((t, i) => { const hh = +t.slice(11, 13); if (!t.startsWith(key) || hh < 5 || hh > 21) return; const j = mi[t]; rows += `<tr class="${hh >= s.wa && hh <= s.wb ? 'inwin' : ''}"><td>${hh}:00</td><td>${f0(g.wind_speed_10m[i])} / ${f0(e.wind_speed_10m[i])} ${dirTxt(g.wind_direction_10m[i])}</td><td>${f0(Math.max(g.wind_gusts_10m[i] ?? 0, e.wind_gusts_10m[i] ?? 0))}</td><td>${j != null && m.wave_height[j] != null ? f1(m.wave_height[j] * M2FT) + ' ft / ' + f0(m.wave_period[j]) + ' s' : '—'}</td></tr>`; });
   const meta = [r.depth ? t('{d} ft deep', { d: f0(r.depth) }) : null, r.relief ? t('{r} ft relief', { r: f0(r.relief) }) : null, r.mat, r.date && !/^00/.test(r.date) ? t('deployed {d}', { d: r.date }) : null].filter(Boolean).join(' · ');
   el.innerHTML = `
-    <div class="hero v${hc}"><div class="eyebrow">${esc(r.st)} · ${dayName(key)} · ${esc(winLabel(fc, key))}</div><h1>${headline(v)}</h1><p class="lead">${lead(s, v, z, fc)}</p>
+    <div class="hero v${hc}"><div class="eyebrow">${esc(r.st)} · ${ramp ? t('Boat ramp') + ' · ' : ''}${dayName(key)} · ${esc(winLabel(fc, key))}</div><h1>${headline(v)}</h1><p class="lead">${lead(s, v, z, fc)}</p>
+      ${v.back && v.ride < 2 ? `<p class="back">${esc(v.back.why)}</p>` : ''}
       <div class="two"><div><b>${t('Go')}</b><span class="t${v.ride}">${t(RIDE_TXT[v.ride])}</span></div><div><b>${secName()}</b><span class="t${v.dive}">${t(secTxt()[v.dive])}</span></div></div>
       <div class="facts"><div><b>${f0(s.windAvg)} kt</b><small>${t('wind {dir}', { dir: dirTxt(s.dir) })}</small></div><div><b>${f0(s.gust)} kt</b><small>${t('gusts')}</small></div><div><b>${f1((s.wave || 0) * M2FT)} ft</b><small>${t('seas · {p} s', { p: f0(s.period) })}</small></div><div><b>${f0(F(s.sst))}°</b><small>${t('water °F')}</small></div></div>
       <button class="x" id="xBtn" aria-label="${t('Close')}">×</button></div>
-    ${weekHTML(fc, cl)}
+    ${weekHTML(r, fc, cl, z, alerts)}
     <div class="wins">${Object.entries(WIN).map(([k, w]) => `<button class="${k === S.win ? 'on' : ''}" data-win="${k}">${t(w[0])}</button>`).join('')}</div>
-    <div class="card"><h3>${esc(r.name || r.id)}</h3><p style="margin:0;font-size:14px">${esc(r.desc || '')}${meta ? `<br><span class="muted">${esc(meta)}</span>` : ''}</p></div>
-    ${buoyHTML(r.lat, r.lon)}
-    ${S.act === 'fish' ? '' : clarityHTML(r, fc)}
     ${v.why.length ? `<div class="card"><h3>${t('Why this verdict')}</h3><ul class="why">${v.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
-    ${biteHTML(r, fc, key, s, tst, td)}
-    ${fishHTML(r, key, s)}
-    ${S.act === 'fish' ? clarityHTML(r, fc) : ''}
+    ${ramp ? rampReefsHTML(r) : `<div class="card"><h3>${esc(r.name || r.id)}</h3><p style="margin:0;font-size:14px">${esc(r.desc || '')}${meta ? `<br><span class="muted">${esc(meta)}</span>` : ''}</p></div>`}
+    ${buoyHTML(r.lat, r.lon)}
+    ${ramp || S.act === 'fish' ? '' : clarityHTML(r, fc)}
+    ${ramp ? '' : biteHTML(r, fc, key, s, tst, td)}
+    ${ramp ? '' : fishHTML(r, key, s)}
+    ${!ramp && S.act === 'fish' ? clarityHTML(r, fc) : ''}
     ${tides.length ? `<div class="card"><h3>${t('Tide · {st}', { st: esc(tst.n) })}</h3><div class="kv">${tides.map(x => `<span>${x.type} ${x.h}</span><b>${t('slack {w}', { w: x.slack })}</b>`).join('')}</div><p class="muted" style="margin:6px 0 0;font-size:12px">${t('Slack water is the easy window to launch and retrieve.')}</p></div>` : ''}
     <details><summary>${t('Hour by hour')}</summary><div class="d"><table><tr><th>${t('Hour')}</th><th>${t('Wind, US / EU model')}</th><th>${t('Gusts')}</th><th>${t('Seas')}</th></tr>${rows}</table><p class="muted" style="font-size:12px">${t('Knots. Two weather models, the American GFS and the European ECMWF; the worse one drives the verdict. Highlighted rows are your {win} window. Air {t}°F, rain {r}%.', { win: esc(winLabel(fc, key)), t: f0(F(s.tmax)), r: f0(s.rain) })}</p></div></details>
-    ${z ? `<details><summary>${t('Official NWS forecast · {z}', { z: esc(zone.id) })}</summary><div class="d">${z.sca ? `<p style="margin:0 0 8px;color:var(--no);font-weight:700">${esc(z.sca)}</p>` : ''}<pre class="cwf">${esc(per.length ? per.map(p => p.name + ': ' + p.text).join('\n\n') : t('This day is not yet in the NWS marine forecast.'))}</pre><p class="muted" style="font-size:12px">${esc(zone.name)}</p></div></details>` : ''}
+    ${z ? `<details><summary>${t('Official NWS forecast · {z}', { z: esc(zone.id) })}</summary><div class="d">${alerts && alerts.length ? alerts.map(a => `<p style="margin:0 0 8px;color:var(--no);font-weight:700">${esc(a.event)} · ${t('until {t}', { t: new Date(a.off).toLocaleString(S.lang, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) })}</p>`).join('') : z.sca ? `<p style="margin:0 0 8px;color:var(--no);font-weight:700">${esc(z.sca)}</p>` : ''}<pre class="cwf">${esc(per.length ? per.map(p => p.name + ': ' + p.text).join('\n\n') : t('This day is not yet in the NWS marine forecast.'))}</pre><p class="muted" style="font-size:12px">${esc(zone.name)}</p></div></details>` : ''}
     <div class="row"><button class="btn" id="satGo">${t('Satellite view')}</button><a class="btn" target="_blank" rel="noopener" href="https://maps.apple.com/?ll=${r.lat},${r.lon}&q=${encodeURIComponent(r.name || 'Reef')}">${t('Open in Maps')}</a></div>
     <p class="muted" style="font-size:11px;text-align:center;margin:0">${t('Forecast estimate. Conditions can differ on site. Not for navigation.')} ${r.lat.toFixed(4)}, ${r.lon.toFixed(4)}</p>`;
   $('xBtn').onclick = closeReef;
-  el.querySelectorAll('[data-win]').forEach(b => b.onclick = () => { S.win = b.dataset.win; try { localStorage.setItem('rg.win', S.win); } catch (e) {} renderReef(r, fc, zone, cwf, tst, td); S.area = null; S.areaKey = ''; colorReefs(); });
-  el.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { S.day = +b.dataset.day; renderReef(r, fc, zone, cwf, tst, td); S.area = null; S.areaKey = ''; colorReefs(); });
+  el.querySelectorAll('[data-win]').forEach(b => b.onclick = () => { S.win = b.dataset.win; try { localStorage.setItem('rg.win', S.win); } catch (e) {} renderReef(r, fc, zone, cwf, tst, td, alerts); S.area = null; S.areaKey = ''; colorReefs(); });
+  el.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { S.day = +b.dataset.day; renderReef(r, fc, zone, cwf, tst, td, alerts); S.area = null; S.areaKey = ''; colorReefs(); });
+  el.querySelectorAll('[data-reef]').forEach(b => b.onclick = () => { const x = S.reefs.find(y => y.id === b.dataset.reef); if (x) { map.setView([x.lat, x.lon], Math.max(map.getZoom(), 11)); openReef(x); } });
   const more = el.querySelector('[data-more]'); if (more) more.onclick = () => { el.querySelector('.fl.more').hidden = false; more.remove(); };
   $('satGo').onclick = () => { closeReef(); map.setView([r.lat, r.lon], Math.max(map.getZoom(), 9)); toggleSat(true); };
 }
-function closeReef() { $('sheet').classList.remove('on'); if (S.reef && S.reef.m) S.reef.m.setIcon(mkIcon(reefClass(S.reef), false)); S.reef = null; updateArea(); }
+function closeReef() { $('sheet').classList.remove('on'); if (S.reef && S.reef.m) S.reef.m.setIcon(iconFor(S.reef, false)); S.reef = null; updateArea(); }
 $('grip').onclick = closeReef;
 map.on('click', () => { if ($('sheet').classList.contains('on')) closeReef(); });
 
 // ---------- next window + alerts ----------
 // best day ahead: first green day, else the first yellow; cls tells which
-function nextWindow(fc) { let best = null; for (let i = 1; i < S.days.length; i++) { const st = dayStats(fc, S.days[i]); if (!st) continue; const v = verdicts(st); const c = overall(v); if (c === 0) return { key: S.days[i], s: st, v, cls: 0 }; if (c === 1 && !best) best = { key: S.days[i], s: st, v, cls: 1 }; } return best; }
+function nextWindow(fc, alerts) { let best = null; for (let i = 1; i < S.days.length; i++) { const st = dayStats(fc, S.days[i]); if (!st) continue; const v = verdicts(st, null, { alert: alertOn(alerts || [], null, fc, S.days[i], st.wa, st.wb) }); const c = overall(v); if (c === 0) return { key: S.days[i], s: st, v, cls: 0 }; if (c === 1 && !best) best = { key: S.days[i], s: st, v, cls: 1 }; } return best; }
 function notifyOn() { try { return localStorage.getItem('rg.notify') === '1'; } catch (e) { return false; } }
 function maybeNotify(nx, c) {
   if (!notifyOn() || !('Notification' in window) || Notification.permission !== 'granted') return;
@@ -522,8 +585,8 @@ let onbDue = false; try { onbDue = !localStorage.getItem('rg.onb'); } catch (e) 
 
 (async () => {
   const t = todayKey(); S.days = Array.from({ length: 7 }, (_, i) => addDays(t, i));
-  const [reefs, tides, nd, fish, kd] = await Promise.all([getJSON('reefs.json'), getJSON('tides.json').catch(() => []), getJSON('ndbc.json?' + Date.now()).catch(() => null), getJSON('data/fish.json').catch(() => null), getJSON('kd.json?' + Date.now()).catch(() => null)]);
+  const [reefs, tides, nd, fish, kd, ramps] = await Promise.all([getJSON('reefs.json'), getJSON('tides.json').catch(() => []), getJSON('ndbc.json?' + Date.now()).catch(() => null), getJSON('data/fish.json').catch(() => null), getJSON('kd.json?' + Date.now()).catch(() => null), getJSON('ramps.json').catch(() => [])]);
   S.fish = fish; S.kd = kd;
-  S.tides = tides; S.buoys = nd ? nd.stations : []; loadReefs(reefs); if (onbDue) showOnb(); else { updateArea(); colorReefs(); }
+  S.tides = tides; S.buoys = nd ? nd.stations : []; loadReefs(reefs); loadRamps(ramps); if (onbDue) showOnb(); else { updateArea(); colorReefs(); }
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 })();

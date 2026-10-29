@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#f4f7f9">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>ReefGo</title>
+<title>ReefGo · Gulf Road Apps</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="img/icon-180.png">
 <link rel="icon" href="icon.svg">
@@ -84,6 +84,13 @@ input{font:inherit}
 .mk{width:22px;height:22px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
 .mk.cx{background:#3b82a0}.mk.c0{background:var(--ok)}.mk.c1{background:var(--mid)}.mk.c2{background:var(--no)}
 .mk.sel{transform:scale(1.3);border-color:#0e1b2a}
+/* boat ramps: squares, same verdict colors; their clusters are grey so they never pose as reefs */
+.mk.ramp{border-radius:5px;width:18px;height:18px;margin:2px}
+.marker-cluster.ramps{background:rgba(100,116,139,.3)}.marker-cluster.ramps div{background:#64748b;width:22px;height:22px;line-height:22px;font-size:11px;border-radius:6px}
+.hero .back{margin:8px 0 0;font-size:14px;font-weight:700}
+.lnk{font-weight:700;color:var(--accent);text-align:left}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--line);margin-right:6px;vertical-align:-1px}.dot.c0{background:var(--ok)}.dot.c1{background:var(--mid)}.dot.c2{background:var(--no)}
+.modal .cta{display:block;padding:13px;border-radius:14px;background:var(--accent);color:#fff;font-weight:800;font-size:15px;text-align:center;text-decoration:none;margin:4px 0 14px}
 .marker-cluster{background:rgba(59,130,160,.35);border-radius:50%;background-clip:padding-box}.marker-cluster div{width:26px;height:26px;margin:4px;border-radius:50%;text-align:center;line-height:26px;background:#3b82a0;color:#fff;font:800 12px/26px var(--font)}
 .marker-cluster.k0{background:rgba(31,157,85,.3)}.marker-cluster.k0 div{background:var(--ok)}
 .marker-cluster.k1{background:rgba(199,125,0,.3)}.marker-cluster.k1 div{background:var(--mid)}
@@ -253,6 +260,7 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
     <div class="demo v1"><b data-i18n>Go if you must</b><span data-i18n>On the edge. Rough ride, or the water is still stirred up.</span></div>
     <div class="demo v2"><b data-i18n>No-go</b><span data-i18n>Too much wind or sea for your boat. Stay home.</span></div>
     <p data-i18n>Below the verdict: the numbers, the buoys, the tide, the fish and the rules.</p>
+    <p style="font-size:13px" data-i18n>Made by Gulf Road Apps. No account, no ads, the verdict is free.</p>
     <div class="spacer"></div>
     <div class="foot"><button class="cta" id="onbDone" data-i18n>Show me the map</button></div>
   </div>
@@ -299,12 +307,16 @@ pre.cwf{white-space:pre-wrap;font:13px/1.4 var(--font);margin:0}
     <h2 data-i18n>Alerts</h2>
     <label class="legend" style="gap:10px"><input type="checkbox" id="notifyOn" style="width:20px;height:20px;accent-color:var(--accent)"> <span data-i18n>Tell me when a window opens near my map</span></label>
     <p class="muted" style="font-size:13px" id="notifyHint" data-i18n>Checked each time you open ReefGo: if a green day appears in the week ahead for the area on your map, you get a notification. Push alerts while the app is closed come with the App Store version.</p>
-    <h2 data-i18n>How to read</h2>
+    <h2 data-i18n>ReefGo Pro · founding price</h2>
+  <p class="muted" style="font-size:13px" data-i18n>Everything you see is free while we build. Pro locks in the founding price for early users and funds what comes next: push alerts while the app is closed, saved reefs with week-ahead windows, the App Store and Google Play versions. 14 days free, cancel any time.</p>
+  <a class="cta" href="https://buy.stripe.com/14AfZg1SKcZM0Mh6NxcjS01" target="_blank" rel="noopener" data-i18n>Start 14-day free trial →</a>
+  <h2 data-i18n>How to read</h2>
     <div class="legend"><i style="background:var(--ok)"></i data-i18n>Green — yes</div>
     <div class="legend"><i style="background:var(--mid)"></i data-i18n>Yellow — only if you really want to</div>
     <div class="legend"><i style="background:var(--no)"></i data-i18n>Red — no</div>
     <p class="muted" style="font-size:13px" data-i18n>Two separate answers: <b>Go</b> (can you get there and back) and <b>Fish</b> (can you sit on the reef at anchor: wind, gusts, seas and period) or <b>Dive</b> (can you safely be in the water: seas, period and clarity). Computed for the time window you pick on the reef card (morning by default; evening runs to sunset). Clarity recovers about two days after strong wind; the satellite card estimates it, the satellite layer shows it. Forecasts can be wrong — check on site. Not for navigation.</p>
     <p class="muted" style="font-size:13px"><a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)" data-i18n>Privacy policy</a><span data-i18n> · No account, no tracking, no ads. Your settings live on this phone.</span></p>
+  <p class="muted" style="font-size:13px"><span data-i18n>ReefGo is made by <b>Gulf Road Apps</b>, a one-person shop on the Florida Gulf coast.</span> <a href="mailto:gulfandroadapps@gmail.com" style="color:var(--accent)">gulfandroadapps@gmail.com</a></p>
     <p class="muted" style="font-size:12px">Data: NWS/NOAA marine zones, Open-Meteo (GFS + ECMWF), NOAA CO-OPS tides, NASA GIBS imagery, NOAA CoastWatch Kd490 water clarity, state reef programs (FWC, AL MRD, MS DMR, LDWF, TPWD, GA DNR, SCDNR, NC DMF, MARCO, CDFW, WA DNR, HI DAR, NOAA ENC), FWC fishing rules. Fish photos: Wikimedia Commons contributors (<a href="https://github.com/alexp-automation/reefgo/blob/main/data/fish-credits.json" target="_blank" rel="noopener" style="color:var(--accent)">credits</a>).</p>
     <div class="row" style="margin-top:8px"><button class="chip" id="setIntro" style="flex:1" data-i18n>Show intro again</button><button class="chip" id="setClose" style="flex:1;background:var(--fg);color:var(--bg)" data-i18n>Done</button></div>
   </div>

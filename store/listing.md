@@ -5,10 +5,12 @@
 **Short description (Google Play, 80 chars):** Go / no-go verdict for every public reef on the US coast. Wind, seas, tide, fish.
 **Category:** Weather (secondary: Sports / Navigation is NOT allowed — we say "not for navigation")
 **Keywords (App Store, 100 chars):** reef,fishing,spearfishing,dive,boating,jet ski,marine forecast,waves,tide,offshore,buoy,artificial reef
-**Price:** free; Pro $29.99/year or $4.99/month, 14-day trial, lifetime $79 (not in v1)
+**Price:** free; Pro $59.99/year (founding price, locked for early users), 14-day trial. Payment page: https://buy.stripe.com/14AfZg1SKcZM0Mh6NxcjS01 — the price lives there, never in posts.
+**Developer / seller name:** Gulf Road Apps (Oleksii Panov, sole proprietor, DBA). Support: gulfandroadapps@gmail.com
 **Privacy nutrition label:** Data not collected. Location used, not linked to identity, not stored.
 **Age rating:** 4+
 **Support URL:** https://alexp-automation.github.io/reefgo/privacy.html (replace with domain)
+**Brand rules:** nothing under a personal name; all public listings, posts and replies as Gulf Road Apps.
 
 ## Description
 
@@ -21,7 +23,10 @@ ReefGo turns the marine forecast into one honest verdict for the morning window,
 - **The numbers behind it.** Wind, gusts, seas and period from GFS and ECMWF; the worse model drives the verdict. Hour by hour.
 - **Right now from the buoys.** Nearest NOAA NDBC wind and wave buoy, updated every 30 minutes.
 - **Tide and slack water** from the nearest NOAA station.
-- **The official NWS marine forecast** for your zone, small craft advisories included.
+- **The official NWS marine forecast** for your zone. An active Small Craft Advisory is an automatic no-go, whatever the numbers say.
+- **Reasons you can check.** Every verdict names the number and the limit it broke: "Wind 14 kt from the NE: over the 12 kt comfort limit for a jet ski", "wind off the land is a headwind on the way home", "be back on the trailer by 1 pm: thunderstorms from 2 pm".
+- **Wave memory.** Strong wind overnight keeps the sea up for hours after it drops; ReefGo does not hand out a green on a calm forecast alone.
+- **Boat ramps.** Public coastal ramps on the map, colored by the same verdict, with the reefs you can reach from each.
 - **Satellite view** for the last 7 days: see the murk yourself.
 - **Fish here.** Species likely on this reef by depth, with photo, size and bag limit, and whether the season is open today. Florida rules built in; other states link to the official rules.
 - **A week at a glance.** Colored dots for every day; tap a day to see why.

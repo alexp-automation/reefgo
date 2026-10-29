@@ -1,7 +1,7 @@
 {
   "name": "ReefGo",
   "short_name": "ReefGo",
-  "description": "Go or no-go for every public reef on the US coast: wind, seas, tides, satellite water clarity",
+  "description": "Go or no-go for every public reef and boat ramp on the US coast: wind, seas, tides, NWS alerts, satellite water clarity. By Gulf Road Apps.",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#0b2238",
