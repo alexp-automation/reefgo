@@ -368,7 +368,7 @@ async function fetchCells(cells) {
     const arr = x => x == null ? null : Array.isArray(x) ? x : [x];
     const [g, e, m] = await Promise.all([getJSON(base + '&models=gfs_seamless').then(arr), getJSON(base + '&models=ecmwf_ifs025').then(arr).catch(() => null),
       getJSON(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=wave_height,wave_period,sea_surface_temperature&timezone=auto&forecast_days=7`).then(arr).catch(() => null)]);
-    cells.forEach((c, i) => { if (!g[i]) return; S.cells[c.key] = { g: g[i].hourly, e: e && e[i] ? e[i].hourly : g[i].hourly, m: m && m[i] ? m[i].hourly : { time: [], wave_height: [], wave_period: [], sea_surface_temperature: [] }, d: g[i].daily }; });
+    cells.forEach((c, i) => { if (!g[i]) return; S.cells[c.key] = { g: g[i].hourly, e: e && e[i] ? e[i].hourly : g[i].hourly, m: m && m[i] ? m[i].hourly : { time: [], wave_height: [], wave_period: [], sea_surface_temperature: [] }, d: g[i].daily, off: g[i].utc_offset_seconds || 0 }; });
   } catch (err) {}
   cells.forEach(c => delete S.cellPending[c.key]);
 }
@@ -376,19 +376,31 @@ function paintCells(cells) {
   const kday = S.days[S.day];
   cells.forEach(c => { const fc = S.cells[c.key]; if (!fc) return; // still loading: keep the color from the coarser cell
     let cls = null; const st = dayStats(fc, kday); if (st) cls = overall(verdicts(st));
+    const zid = S.cellZone[c.key]; const al = zid ? S.alerts[zid] : null;
+    if (st && cls !== 2 && Array.isArray(al)) { const a = alertOn(al, null, fc, kday, st.wa, st.wb); if (a && a.nogo) cls = 2; }
     c.rs.forEach(r => { if (r.c !== cls) { r.c = cls; r.m.setIcon(iconFor(r, r === S.reef)); } }); });
   cluster.refreshClusters();
 }
-// Map colors come from the forecast cells only: NWS alerts need a zone lookup per point, so they are applied on the point sheet and the "Conditions here" card, not to the pins.
+// NWS alerts on the pins: each cell gets its marine zone once (zones?point at the cell centroid), then the zone's active alerts; a no-go alert in the day's window paints the cell red.
+S.cellZone = {}; S.cellZonePending = {};
+async function alertCells(cells, gen) {
+  const todo = cells.filter(c => S.cellZone[c.key] === undefined && !S.cellZonePending[c.key]);
+  for (let i = 0; i < todo.length; i += 6) {
+    const batch = todo.slice(i, i + 6); batch.forEach(c => S.cellZonePending[c.key] = true);
+    await Promise.all(batch.map(async c => { const z = await zoneAt(c.lat, c.lon); S.cellZone[c.key] = z ? z.id : null; if (z) await alertsFor(z.id); delete S.cellZonePending[c.key]; }));
+    if (gen !== colorGen) return; paintCells(cells);
+  }
+}
 let colorGen = 0;
 async function colorReefs() {
   const size = cellSize(), b = map.getBounds().pad(.3), groups = {};
   S.reefs.concat(map.getZoom() >= 9 ? S.ramps : []).forEach(r => { if (!b.contains([r.lat, r.lon])) return; const k = `${size}:${Math.floor(r.lat / size)}:${Math.floor(r.lon / size)}`; (groups[k] || (groups[k] = { key: k, rs: [], lat: 0, lon: 0 })).rs.push(r); });
   const cells = Object.values(groups); cells.forEach(c => { c.lat = c.rs.reduce((a, r) => a + r.lat, 0) / c.rs.length; c.lon = c.rs.reduce((a, r) => a + r.lon, 0) / c.rs.length; });
   paintCells(cells);
-  const missing = cells.filter(c => !S.cells[c.key] && !S.cellPending[c.key]); if (!missing.length) return;
   const gen = ++colorGen;
+  const missing = cells.filter(c => !S.cells[c.key] && !S.cellPending[c.key]);
   for (let i = 0; i < missing.length; i += 40) { await fetchCells(missing.slice(i, i + 40)); if (gen !== colorGen) return; paintCells(cells); }
+  if (S.day <= 2) alertCells(cells, gen); // alerts rarely reach beyond two days out
 }
 let areaTimer = null;
 map.on('moveend', () => { try { const c = map.getCenter(); localStorage.setItem('rg.view', JSON.stringify({ lat: c.lat, lon: c.lng, z: map.getZoom() })); } catch (e) {} clearTimeout(areaTimer); areaTimer = setTimeout(() => { updateArea(); colorReefs(); if (S.sat.on) probeSat(); }, 400); });
