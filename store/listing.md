@@ -5,7 +5,7 @@
 **Short description (Google Play, 80 chars):** Go / no-go verdict for every public reef on the US coast. Wind, seas, tide, fish.
 **Category:** Weather (secondary: Sports / Navigation is NOT allowed — we say "not for navigation")
 **Keywords (App Store, 100 chars):** reef,fishing,spearfishing,dive,boating,jet ski,marine forecast,waves,tide,offshore,buoy,artificial reef
-**Price:** free; Pro $59.99/year (founding price, locked for early users), 14-day trial. Payment page: https://buy.stripe.com/3cI00icxo9NA7aF9ZJcjS02 — the price lives there, never in posts.
+**Price:** free; Pro $59.99/year (founding price, locked for early users), 7-day trial. Payment page: https://buy.stripe.com/3cI00icxo9NA7aF9ZJcjS02 — the price lives there, never in posts.
 **Developer / seller name:** Gulf Road Apps (Oleksii Panov, sole proprietor, DBA). Support: gulfandroadapps@gmail.com
 **Privacy nutrition label:** Data not collected. Location used, not linked to identity, not stored.
 **Age rating:** 4+

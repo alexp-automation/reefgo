@@ -624,9 +624,9 @@ function buildVessel() { const el = $('vessel'); el.innerHTML = ''; Object.entri
 // Pro plans. Paste the Stripe Payment Link into url when it exists; an empty url shows "Soon". Prices: founding yearly, monthly ≈ 1.4× yearly/12, lifetime ≈ 2.5× yearly.
 const PLANS = [
   { id: 'month', price: '$6.99', per: 'per month', url: 'https://buy.stripe.com/dRm5kCdBs5xkgLfgo7cjS04', trial: false },
-  { id: 'year', price: '$59.99', per: 'per year', url: 'https://buy.stripe.com/3cI00icxo9NA7aF9ZJcjS02', trial: true, best: true },
+  { id: 'year', price: '$59.99', per: 'per year', url: 'https://buy.stripe.com/00w3cu8h81h4cuZ9ZJcjS06', trial: true, best: true },
   { id: 'life', price: '$149', per: 'once, forever', url: 'https://buy.stripe.com/dRmcN47d43pc2UpefZcjS05', trial: false }];
-function buildPlans() { const el = $('plans'); if (!el) return; el.innerHTML = PLANS.map(p => `<a class="plan${p.best ? ' best' : ''}${p.url ? '' : ' soon'}" href="${p.url || '#'}" ${p.url ? 'target="_blank" rel="noopener"' : ''}>${p.best ? `<span class="tag">${t('Best value · founding')}</span>` : ''}<b>${p.price}</b><small>${t(p.per)}</small><span class="btn2">${p.url ? (p.trial ? t('14 days free →') : t('Choose →')) : t('Soon')}</span></a>`).join(''); }
+function buildPlans() { const el = $('plans'); if (!el) return; el.innerHTML = PLANS.map(p => `<a class="plan${p.best ? ' best' : ''}${p.url ? '' : ' soon'}" href="${p.url || '#'}" ${p.url ? 'target="_blank" rel="noopener"' : ''}>${p.best ? `<span class="tag">${t('Best value · founding')}</span>` : ''}<b>${p.price}</b><small>${t(p.per)}</small><span class="btn2">${p.url ? (p.trial ? t('7 days free →') : t('Choose →')) : t('Soon')}</span></a>`).join(''); }
 const LANGS = { en: 'English', es: 'Español' };
 function buildLang() { const el = $('lang'); el.innerHTML = ''; Object.entries(LANGS).forEach(([k, n]) => { const b = document.createElement('button'); b.textContent = n; b.className = k === S.lang ? 'on' : ''; b.onclick = () => { try { localStorage.setItem('rg.lang', k); } catch (e) {} location.reload(); }; el.appendChild(b); }); }
 // static page text: every [data-i18n] element keeps its English innerHTML as the key
